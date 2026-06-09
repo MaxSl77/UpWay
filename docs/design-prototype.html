@@ -1,0 +1,2997 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UpWay — AI Assistant for Hockey Parents</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── Design Tokens ────────────────────────────────────── */
+:root {
+  /* Colors */
+  --color-bg:            #0d0f14;
+  --color-surface:       #141720;
+  --color-surface-2:     #1c2030;
+  --color-surface-3:     #242840;
+  --color-border:        #2a2e40;
+  --color-accent:        #22d67a;
+  --color-accent-dim:    rgba(34,214,122,.15);
+  --color-accent-glow:   rgba(34,214,122,.35);
+  --color-orange:        #f59e3a;
+  --color-orange-dim:    rgba(245,158,58,.15);
+  --color-text:          #f0f2f8;
+  --color-text-2:        #8b91a8;
+  --color-text-3:        #555c78;
+  --color-danger:        #ef4444;
+  --color-parent-bubble: #1a3d29;
+  --color-ai-bubble:     #1c2030;
+
+  /* Button Dimensions */
+  --btn-height-sm:       32px;
+  --btn-height-md:       44px;
+  --btn-height-lg:       52px;
+  --btn-min-width-sm:    80px;
+  --btn-min-width-md:    140px;
+  --btn-min-width-lg:    200px;
+  --btn-padding-x-sm:    14px;
+  --btn-padding-x-md:    20px;
+  --btn-padding-x-lg:    28px;
+  --btn-radius:          10px;
+
+  /* Layout */
+  --sidebar-width:       220px;
+  --header-height:       60px;
+}
+
+/* ── Reset ────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 14px;
+  line-height: 1.5;
+}
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input, textarea { font-family: inherit; }
+a { color: inherit; text-decoration: none; }
+
+/* ── Typography ───────────────────────────────────────── */
+.font-display { font-family: 'Syne', sans-serif; }
+
+/* ── Button System ────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; border-radius: var(--btn-radius);
+  font-family: 'DM Sans', sans-serif; font-weight: 500;
+  transition: all .18s ease; white-space: nowrap;
+  cursor: pointer;
+}
+.btn-primary {
+  height: var(--btn-height-md); min-width: var(--btn-min-width-md);
+  padding: 0 var(--btn-padding-x-md);
+  background: var(--color-accent); color: #0a1a11; font-weight: 600;
+}
+.btn-primary:hover { background: #30e887; box-shadow: 0 0 18px var(--color-accent-glow); }
+.btn-sm {
+  height: var(--btn-height-sm); min-width: var(--btn-min-width-sm);
+  padding: 0 var(--btn-padding-x-sm); font-size: 13px;
+}
+.btn-lg {
+  height: var(--btn-height-lg); min-width: var(--btn-min-width-lg);
+  padding: 0 var(--btn-padding-x-lg); font-size: 15px;
+}
+.btn-ghost {
+  height: var(--btn-height-md); min-width: var(--btn-min-width-sm);
+  padding: 0 var(--btn-padding-x-md);
+  background: var(--color-surface-2); color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+.btn-ghost:hover { border-color: var(--color-accent); color: var(--color-accent); }
+.btn-outline {
+  height: var(--btn-height-md); min-width: var(--btn-min-width-sm);
+  padding: 0 var(--btn-padding-x-md);
+  background: transparent; color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+}
+.btn-outline:hover { background: var(--color-accent-dim); }
+.btn-danger {
+  height: var(--btn-height-md); min-width: var(--btn-min-width-sm);
+  padding: 0 var(--btn-padding-x-md);
+  background: transparent; color: var(--color-danger);
+  border: 1px solid var(--color-danger);
+}
+.btn-danger:hover { background: rgba(239,68,68,.12); }
+
+/* ── App Shell ────────────────────────────────────────── */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* Screen navigation (dev tabs at bottom) */
+.screen-nav {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;
+  display: flex; gap: 2px; padding: 6px 8px;
+  background: rgba(10,11,16,.95); backdrop-filter: blur(10px);
+  border-top: 1px solid var(--color-border);
+}
+.screen-nav button {
+  flex: 1; height: 28px; border-radius: 6px; font-size: 11px; font-weight: 500;
+  color: var(--color-text-2); transition: all .15s;
+}
+.screen-nav button.active { background: var(--color-accent-dim); color: var(--color-accent); }
+.screen-nav button:hover:not(.active) { background: var(--color-surface-2); color: var(--color-text); }
+
+/* ── Sidebar ──────────────────────────────────────────── */
+.sidebar {
+  width: var(--sidebar-width); height: 100vh; flex-shrink: 0;
+  background: var(--color-surface); border-right: 1px solid var(--color-border);
+  display: flex; flex-direction: column;
+  position: relative; z-index: 10;
+}
+.sidebar-logo {
+  height: var(--header-height); display: flex; align-items: center;
+  padding: 0 16px; border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+.logo-text {
+  font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800;
+  letter-spacing: -.5px;
+}
+.logo-text span { color: var(--color-accent); }
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 8px; display: flex; flex-direction: column; gap: 20px; }
+.nav-group {}
+.nav-group-label {
+  font-size: 10px; font-weight: 600; letter-spacing: .1em;
+  color: var(--color-text-3); text-transform: uppercase;
+  padding: 0 8px; margin-bottom: 4px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  height: 38px; padding: 0 10px; border-radius: 8px;
+  color: var(--color-text-2); cursor: pointer; transition: all .15s;
+  font-size: 13.5px; font-weight: 400;
+}
+.nav-item svg { flex-shrink: 0; opacity: .7; }
+.nav-item:hover { background: var(--color-surface-2); color: var(--color-text); }
+.nav-item:hover svg { opacity: 1; }
+.nav-item.active {
+  background: var(--color-accent-dim); color: var(--color-accent); font-weight: 500;
+}
+.nav-item.active svg { opacity: 1; color: var(--color-accent); }
+.sidebar-user {
+  padding: 12px; border-top: 1px solid var(--color-border);
+  display: flex; align-items: center; gap: 10px;
+}
+.user-avatar {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: linear-gradient(135deg, #1a5c3a, #22d67a);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+}
+.user-info { min-width: 0; }
+.user-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-plan { font-size: 11px; color: var(--color-accent); font-weight: 500; }
+
+/* ── Main Content ─────────────────────────────────────── */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+.topbar {
+  height: var(--header-height); flex-shrink: 0;
+  background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+  display: flex; align-items: center; padding: 0 28px;
+  gap: 12px;
+}
+.topbar-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; }
+.topbar-sub { font-size: 12px; color: var(--color-text-2); }
+.topbar-spacer { flex: 1; }
+.player-badge {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--color-surface-2); border: 1px solid var(--color-border);
+  border-radius: 8px; padding: 5px 12px; font-size: 12.5px; color: var(--color-text-2);
+}
+.player-badge strong { color: var(--color-text); font-weight: 600; }
+
+/* ── Screens ──────────────────────────────────────────── */
+.screen { display: none; flex: 1; overflow: hidden; flex-direction: column; }
+.screen.active { display: flex; }
+
+/* ──────────────────────────────────────────────────────
+   SCREEN 01 — Login / Registration
+   ────────────────────────────────────────────────────── */
+.login-wrap {
+  display: flex; height: 100vh; overflow: hidden;
+}
+.login-panel {
+  width: 360px; flex-shrink: 0; background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  display: flex; flex-direction: column; padding: 40px 32px;
+  position: relative; overflow: hidden;
+}
+.login-panel-logo {
+  font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -.5px;
+  margin-bottom: 8px;
+}
+.login-panel-logo span { color: var(--color-accent); }
+.login-panel-tagline { font-size: 13px; color: var(--color-text-2); margin-bottom: 40px; }
+.login-stats {
+  margin-top: auto; display: flex; flex-direction: column; gap: 28px;
+}
+.stat-item {}
+.stat-num {
+  font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 800;
+  color: var(--color-text); line-height: 1;
+}
+.stat-label { font-size: 12px; color: var(--color-text-3); margin-top: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: .05em; }
+
+/* decorative accent lines */
+.login-panel::before {
+  content: '';
+  position: absolute; top: -60px; right: -60px;
+  width: 180px; height: 180px;
+  background: radial-gradient(circle, var(--color-accent-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+.login-main {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  padding: 40px; background: var(--color-bg);
+}
+.auth-card {
+  width: 100%; max-width: 480px;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: 16px; overflow: hidden;
+}
+.auth-card-top-accent {
+  height: 4px;
+  background: linear-gradient(90deg, var(--color-accent), #10a060);
+}
+.auth-card-body { padding: 32px; }
+.auth-tabs {
+  display: flex; background: var(--color-surface-2);
+  border-radius: 10px; padding: 3px; margin-bottom: 28px;
+}
+.auth-tab {
+  flex: 1; height: 38px; border-radius: 8px;
+  font-size: 13.5px; font-weight: 500; color: var(--color-text-2);
+  transition: all .15s;
+}
+.auth-tab.active {
+  background: var(--color-surface); color: var(--color-text); font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+.auth-card-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+.auth-card-sub { font-size: 13px; color: var(--color-text-2); margin-bottom: 24px; }
+.form-group { margin-bottom: 16px; }
+.form-label {
+  display: block; font-size: 12.5px; font-weight: 500; color: var(--color-text-2);
+  margin-bottom: 6px;
+}
+.form-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.form-input {
+  width: 100%; height: var(--btn-height-md); padding: 0 14px;
+  background: var(--color-surface-2); border: 1px solid var(--color-border);
+  border-radius: var(--btn-radius); color: var(--color-text); font-size: 14px;
+  transition: border-color .15s;
+}
+.form-input:focus { outline: none; border-color: var(--color-accent); }
+.form-link { font-size: 12px; color: var(--color-accent); }
+.auth-submit {
+  width: 100%;
+  height: var(--btn-height-md); background: var(--color-accent); color: #0a1a11;
+  border-radius: var(--btn-radius); font-weight: 700; font-size: 15px;
+  margin-top: 8px; transition: all .18s;
+}
+.auth-submit:hover { background: #30e887; box-shadow: 0 0 24px var(--color-accent-glow); }
+.auth-divider {
+  display: flex; align-items: center; gap: 12px;
+  margin: 20px 0; color: var(--color-text-3); font-size: 12px;
+}
+.auth-divider::before, .auth-divider::after {
+  content: ''; flex: 1; height: 1px; background: var(--color-border);
+}
+.btn-google {
+  width: 100%; height: var(--btn-height-md);
+  background: var(--color-surface-2); border: 1px solid var(--color-border);
+  border-radius: var(--btn-radius); font-size: 14px; font-weight: 500; color: var(--color-text);
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  transition: border-color .15s;
+}
+.btn-google:hover { border-color: var(--color-text-2); }
+
+/* ──────────────────────────────────────────────────────
+   SCREEN 04 — Dashboard
+   ────────────────────────────────────────────────────── */
+.content-area {
+  flex: 1; overflow-y: auto; padding: 24px 28px 60px;
+  scrollbar-width: thin; scrollbar-color: var(--color-surface-3) transparent;
+}
+.dashboard-grid { display: grid; gap: 16px; }
+
+/* Next Step CTA — full-width, primary call-to-action */
+.next-step-card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: 14px; overflow: hidden; position: relative;
+}
+.next-step-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 4px; background: var(--color-accent);
+}
+.next-step-inner { padding: 20px 20px 20px 28px; display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.next-step-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  background: var(--color-accent-dim); color: var(--color-accent);
+  border-radius: 20px; padding: 3px 10px; font-size: 11.5px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em; margin-bottom: 8px;
+}
+.next-step-title {
+  font-family: 'Syne', sans-serif; font-size: 19px; font-weight: 700;
+  margin-bottom: 4px;
+}
+.next-step-desc { font-size: 13px; color: var(--color-text-2); }
+.next-step-meta { flex: 1; min-width: 0; }
+.next-step-action { flex-shrink: 0; }
+
+/* Top-row cards */
+.cards-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; align-items: stretch; }
+.metric-card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: 14px; padding: 20px; display: flex; flex-direction: column;
+}
+.metric-card-label {
+  font-size: 10.5px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .1em; color: var(--color-text-3); margin-bottom: 10px;
+}
+.metric-card-value {
+  font-size: 30px; font-weight: 800; line-height: 1;
+  margin-bottom: 4px;
+}
+.metric-card-context { font-size: 12px; color: var(--color-text-2); }
+.metric-progress { margin-top: 10px; }
+.progress-bar {
+  height: 6px; background: var(--color-surface-3); border-radius: 99px; overflow: hidden;
+}
+.progress-fill { height: 100%; background: var(--color-accent); border-radius: 99px; }
+.badge-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  border-radius: 6px; padding: 3px 8px; font-size: 11.5px; font-weight: 500;
+}
+.badge-green { background: rgba(34,214,122,.22); color: #22d67a; border: 1px solid rgba(34,214,122,.35); }
+.badge-orange { background: rgba(245,158,58,.22); color: #f59e3a; border: 1px solid rgba(245,158,58,.35); }
+.badge-gray { background: var(--color-surface-3); color: var(--color-text-2); border: 1px solid transparent; }
+.badge-blue { background: rgba(96,165,250,.18); color: #60a5fa; border: 1px solid rgba(96,165,250,.3); }
+
+/* Bottom row */
+.bottom-row { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; }
+.card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: 14px; overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--color-border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-title { font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700; }
+.card-body { padding: 16px 20px; }
+
+/* Events */
+.event-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 0; border-bottom: 1px solid var(--color-border);
+}
+.event-item:last-child { border-bottom: none; }
+.event-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px;
+}
+.event-dot.green { background: var(--color-accent); box-shadow: 0 0 6px var(--color-accent-glow); }
+.event-dot.orange { background: var(--color-orange); box-shadow: 0 0 6px rgba(245,158,58,.4); }
+.event-date { font-size: 11px; color: var(--color-text-3); }
+.event-title { font-size: 13px; font-weight: 500; }
+.event-meta { font-size: 11.5px; color: var(--color-text-2); margin-top: 2px; }
+
+/* Roadmap steps */
+.roadmap-step {
+  display: flex; gap: 14px; padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.roadmap-step:last-child { border-bottom: none; }
+.step-num {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+}
+.step-done { background: var(--color-accent-dim); color: var(--color-accent); }
+.step-active { background: var(--color-accent); color: #0a1a11; }
+.step-todo { background: var(--color-surface-3); color: var(--color-text-3); }
+.step-title { font-size: 13px; font-weight: 500; }
+.step-meta { font-size: 11.5px; color: var(--color-text-2); margin-top: 2px; }
+
+/* ──────────────────────────────────────────────────────
+   SCREEN 05 — AI Chat
+   ────────────────────────────────────────────────────── */
+.chat-layout { display: flex; flex: 1; overflow: hidden; }
+.chat-history-panel {
+  width: 240px; flex-shrink: 0; background: var(--color-surface);
+  border-right: 1px solid var(--color-border);
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.chat-history-head {
+  padding: 12px; border-bottom: 1px solid var(--color-border);
+}
+.chat-history-list { flex: 1; overflow-y: auto; padding: 8px; }
+.chat-history-item {
+  padding: 10px 12px; border-radius: 8px; cursor: pointer;
+  margin-bottom: 2px; transition: background .12s;
+}
+.chat-history-item.active { background: var(--color-accent-dim); }
+.chat-history-item:not(.active):hover { background: var(--color-surface-2); }
+.chat-history-title { font-size: 12.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-history-date { font-size: 11px; color: var(--color-text-3); margin-top: 2px; }
+.chat-section-label {
+  font-size: 10px; font-weight: 600; letter-spacing: .1em;
+  color: var(--color-text-3); text-transform: uppercase;
+  padding: 8px 12px 4px;
+}
+
+.chat-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--color-surface-2); }
+.chat-topbar {
+  height: var(--header-height); flex-shrink: 0;
+  background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+  display: flex; align-items: center; padding: 0 20px; gap: 12px;
+}
+.chat-messages {
+  flex: 1; overflow-y: auto; padding: 24px 20px;
+  display: flex; flex-direction: column; gap: 20px;
+  scrollbar-width: thin; scrollbar-color: var(--color-surface-3) transparent;
+}
+
+/* Message bubbles */
+.msg { display: flex; gap: 10px; max-width: 72%; }
+.msg-ai { align-self: flex-start; }
+.msg-parent { align-self: flex-end; flex-direction: row-reverse; }
+.msg-avatar {
+  width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; align-self: flex-end;
+}
+.msg-avatar-ai { background: var(--color-surface-3); color: var(--color-accent); }
+.msg-avatar-parent { background: linear-gradient(135deg, #1a5c3a, #22d67a); color: #fff; }
+.msg-bubble {
+  padding: 12px 16px; border-radius: 16px; font-size: 13.5px; line-height: 1.6;
+}
+.msg-ai .msg-bubble {
+  background: var(--color-ai-bubble); border: 1px solid var(--color-border);
+  border-bottom-left-radius: 4px;
+}
+.msg-parent .msg-bubble {
+  background: var(--color-parent-bubble); border: 1px solid rgba(34,214,122,.2);
+  border-bottom-right-radius: 4px; color: #e2f8ec;
+}
+.msg-context-card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-accent); border-radius: 10px;
+  padding: 12px 14px; margin-top: 10px; font-size: 12.5px; color: var(--color-text-2);
+}
+.msg-time { font-size: 10.5px; color: var(--color-text-3); margin-top: 5px; }
+.msg-ai .msg-time { padding-left: 44px; }
+.msg-parent .msg-time { padding-right: 44px; text-align: right; }
+.msg-content { display: flex; flex-direction: column; min-width: 0; }
+
+.chat-input-bar {
+  flex-shrink: 0; padding: 14px 20px;
+  background: var(--color-surface); border-top: 1px solid var(--color-border);
+}
+.chat-input-wrap {
+  display: flex; align-items: flex-end; gap: 10px;
+  background: var(--color-surface-2); border: 1px solid var(--color-border);
+  border-radius: 12px; padding: 10px 12px; transition: border-color .15s;
+}
+.chat-input-wrap:focus-within { border-color: var(--color-accent); }
+.chat-input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--color-text); font-size: 14px; resize: none;
+  min-height: 22px; max-height: 120px; line-height: 1.5;
+}
+.chat-input::placeholder { color: var(--color-text-3); }
+.chat-send {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--color-accent); color: #0a1a11;
+  display: flex; align-items: center; justify-content: center;
+  transition: all .15s; flex-shrink: 0;
+}
+.chat-send:hover { background: #30e887; box-shadow: 0 0 12px var(--color-accent-glow); }
+.quick-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.quick-chip {
+  height: 28px; padding: 0 12px; border-radius: 20px;
+  background: var(--color-surface-3); border: 1px solid var(--color-border);
+  font-size: 12px; color: var(--color-text-2); transition: all .12s; cursor: pointer;
+}
+.quick-chip:hover { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-accent-dim); }
+
+/* ──────────────────────────────────────────────────────
+   SCREEN 12 — Settings
+   ────────────────────────────────────────────────────── */
+.settings-wrap { padding: 24px 28px 60px; overflow-y: auto; flex: 1; }
+.settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.settings-card {
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: 14px; overflow: hidden;
+}
+.settings-card-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--color-border);
+  font-family: 'Syne', sans-serif; font-size: 14px; font-weight: 700;
+}
+.settings-card-body { padding: 4px 0; }
+.setting-row {
+  display: flex; align-items: center; padding: 14px 20px;
+  border-bottom: 1px solid var(--color-border); gap: 12px;
+}
+.setting-row:last-child { border-bottom: none; }
+.setting-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: var(--color-surface-2); display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.setting-info { flex: 1; min-width: 0; }
+.setting-name { font-size: 13.5px; font-weight: 500; }
+.setting-desc { font-size: 12px; color: var(--color-text-2); margin-top: 2px; }
+.toggle {
+  width: 44px; height: 24px; border-radius: 12px;
+  background: var(--color-surface-3); border: none; cursor: pointer;
+  transition: background .15s; position: relative; flex-shrink: 0;
+}
+.toggle.on { background: var(--color-accent); }
+.toggle::after {
+  content: ''; position: absolute; top: 3px; left: 3px;
+  width: 18px; height: 18px; border-radius: 50%; background: #fff;
+  transition: transform .15s; box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+.toggle.on::after { transform: translateX(20px); }
+
+/* Language Toggle (English / Russian) */
+.lang-toggle-wrap { padding: 16px 20px; }
+.lang-toggle-label { font-size: 12px; color: var(--color-text-2); margin-bottom: 10px; font-weight: 500; }
+.lang-toggle {
+  display: flex; background: var(--color-surface-2);
+  border: 1px solid var(--color-border); border-radius: 10px; padding: 3px;
+  width: fit-content; gap: 2px;
+}
+.lang-opt {
+  height: 36px; padding: 0 18px; border-radius: 8px;
+  font-size: 13.5px; font-weight: 500; color: var(--color-text-2);
+  transition: all .15s; cursor: pointer; display: flex; align-items: center; gap: 6px;
+}
+.lang-opt.active {
+  background: var(--color-surface); color: var(--color-text); font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+.lang-flag { font-size: 16px; }
+
+.danger-zone { border-color: rgba(239,68,68,.25); }
+.danger-zone .settings-card-header { color: var(--color-danger); }
+
+/* ── Scrollbar ────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-surface-3); border-radius: 3px; }
+
+/* ── Utilities ────────────────────────────────────────── */
+.text-accent { color: var(--color-accent); }
+.text-muted { color: var(--color-text-2); }
+.text-tiny { font-size: 11px; color: var(--color-text-3); }
+.flex-center { display: flex; align-items: center; }
+.gap-8 { gap: 8px; }
+
+/* ── Checkbox ─────────────────────────────────────────── */
+.form-check {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin: 4px 0;
+}
+.form-check input[type=checkbox] { display: none; }
+.form-check-box {
+  width: 18px; height: 18px; border-radius: 5px; flex-shrink: 0;
+  border: 1.5px solid var(--color-border); background: var(--color-surface-2);
+  cursor: pointer; transition: all .15s; display: flex; align-items: center; justify-content: center;
+  margin-top: 2px;
+}
+.form-check input:checked + .form-check-box {
+  background: var(--color-accent); border-color: var(--color-accent);
+}
+.form-check input:checked + .form-check-box::after {
+  content: ''; width: 5px; height: 9px;
+  border: 2px solid #0a1a11; border-top: none; border-left: none;
+  transform: rotate(45deg) translateY(-1px);
+}
+.form-check-label { font-size: 12.5px; color: var(--color-text-2); line-height: 1.5; cursor: pointer; }
+.form-check-label a { color: var(--color-accent); }
+
+/* ── Password recovery ────────────────────────────────── */
+.recovery-state { display: none; }
+.recovery-state.active { display: block; }
+.recovery-email-icon {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: var(--color-accent-dim); border: 1px solid rgba(34,214,122,.3);
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px; font-size: 24px;
+}
+.resend-timer {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--color-text-2); margin-top: 12px;
+}
+.resend-timer .countdown { color: var(--color-accent); font-weight: 600; font-variant-numeric: tabular-nums; }
+.resend-link { color: var(--color-accent); cursor: pointer; font-size: 13px; }
+.resend-link:hover { text-decoration: underline; }
+
+/* ── Onboarding wizard ────────────────────────────────── */
+.onboarding-wrap {
+  display: flex; height: calc(100vh - 40px); overflow: hidden;
+}
+.onboarding-side {
+  width: 300px; flex-shrink: 0;
+  background: var(--color-surface); border-right: 1px solid var(--color-border);
+  display: flex; flex-direction: column; padding: 40px 32px; position: relative; overflow: hidden;
+}
+.onboarding-side::before {
+  content: ''; position: absolute; bottom: -80px; right: -80px;
+  width: 240px; height: 240px;
+  background: radial-gradient(circle, var(--color-accent-glow) 0%, transparent 65%);
+  pointer-events: none;
+}
+.onboarding-logo { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 40px; }
+.onboarding-logo span { color: var(--color-accent); }
+.onboarding-steps-list { display: flex; flex-direction: column; gap: 0; }
+.ob-step-item {
+  display: flex; align-items: flex-start; gap: 14px; padding: 14px 0;
+  position: relative;
+}
+.ob-step-item:not(:last-child)::after {
+  content: ''; position: absolute; left: 15px; top: 44px;
+  width: 1px; height: calc(100% - 14px);
+  background: var(--color-border);
+}
+.ob-step-dot {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  border: 2px solid var(--color-border); background: var(--color-surface-2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--color-text-3);
+  transition: all .25s; z-index: 1; position: relative;
+}
+.ob-step-item.done .ob-step-dot { background: var(--color-accent); border-color: var(--color-accent); color: #0a1a11; }
+.ob-step-item.active .ob-step-dot { border-color: var(--color-accent); color: var(--color-accent); background: var(--color-accent-dim); box-shadow: 0 0 0 4px var(--color-accent-dim); }
+.ob-step-item.done::after { background: var(--color-accent); opacity: .4; }
+.ob-step-info {}
+.ob-step-num { font-size: 10.5px; color: var(--color-text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; }
+.ob-step-name { font-size: 13.5px; font-weight: 500; color: var(--color-text-2); margin-top: 1px; }
+.ob-step-item.active .ob-step-name { color: var(--color-text); font-weight: 600; }
+.ob-step-item.done .ob-step-name { color: var(--color-text-3); }
+
+.onboarding-main {
+  flex: 1; display: flex; flex-direction: column; overflow: hidden;
+  background: var(--color-bg);
+}
+.onboarding-header {
+  padding: 32px 48px 0; flex-shrink: 0;
+}
+.onboarding-progress-bar {
+  height: 3px; background: var(--color-surface-3); border-radius: 2px; margin-bottom: 36px;
+}
+.onboarding-progress-fill {
+  height: 100%; background: var(--color-accent); border-radius: 2px;
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+}
+.onboarding-step-title { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; margin-bottom: 6px; }
+.onboarding-step-sub { font-size: 14px; color: var(--color-text-2); }
+.onboarding-body {
+  flex: 1; overflow-y: auto; padding: 28px 48px;
+  scrollbar-width: thin; scrollbar-color: var(--color-surface-3) transparent;
+}
+.onboarding-footer {
+  padding: 20px 48px; border-top: 1px solid var(--color-border);
+  display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
+  background: var(--color-bg);
+}
+.ob-step-panel { display: none; }
+.ob-step-panel.active { display: block; animation: fadeSlide .3s ease; }
+@keyframes fadeSlide { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+
+/* Step forms */
+.ob-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.ob-form-group { margin-bottom: 18px; }
+.ob-label { font-size: 12.5px; font-weight: 600; color: var(--color-text-2); margin-bottom: 7px; display: block; text-transform: uppercase; letter-spacing: .06em; }
+.ob-input {
+  width: 100%; height: var(--btn-height-md); padding: 0 14px;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: var(--btn-radius); color: var(--color-text); font-size: 14px;
+  transition: border-color .15s;
+}
+.ob-input:focus { outline: none; border-color: var(--color-accent); }
+.ob-input::placeholder { color: var(--color-text-3); }
+.ob-input-unit {
+  position: relative;
+}
+.ob-input-unit input { padding-right: 40px; }
+.ob-input-unit span {
+  position: absolute; right: 14px; top: 50%; transform: translateY(-50%);
+  font-size: 12px; color: var(--color-text-3); pointer-events: none;
+}
+
+/* Position / level / country pills */
+.ob-pill-group { display: flex; flex-wrap: wrap; gap: 10px; }
+.ob-pill {
+  height: 42px; padding: 0 18px; border-radius: 10px;
+  background: var(--color-surface); border: 1.5px solid var(--color-border);
+  color: var(--color-text-2); font-size: 13.5px; font-weight: 500; cursor: pointer;
+  transition: all .15s;
+}
+.ob-pill:hover { border-color: var(--color-accent); color: var(--color-text); }
+.ob-pill.selected { background: var(--color-accent-dim); border-color: var(--color-accent); color: var(--color-accent); font-weight: 600; }
+
+/* Country flag pills */
+.ob-country-pill { display: flex; align-items: center; gap: 8px; padding: 0 16px; height: 48px; }
+.ob-country-flag { font-size: 20px; }
+
+/* Goal cards */
+.ob-goals-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.ob-goal-card {
+  border: 1.5px solid var(--color-border); border-radius: 12px; padding: 14px 16px;
+  background: var(--color-surface); cursor: pointer; transition: all .15s;
+  position: relative;
+}
+.ob-goal-card:hover { border-color: var(--color-accent); transform: translateY(-1px); }
+.ob-goal-card.selected { border-color: var(--color-accent); background: var(--color-accent-dim); }
+.ob-goal-card.selected::after {
+  content: '✓'; position: absolute; top: 10px; right: 12px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--color-accent); color: #0a1a11;
+  font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.ob-goal-icon { font-size: 20px; margin-bottom: 8px; }
+.ob-goal-title { font-size: 13px; font-weight: 600; color: var(--color-text); line-height: 1.3; }
+.ob-goal-league { font-size: 11px; color: var(--color-text-3); margin-top: 3px; }
+.ob-custom-goal { margin-top: 12px; }
+
+/* Skill sliders */
+.skill-row { margin-bottom: 24px; }
+.skill-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.skill-name { font-size: 14px; font-weight: 600; }
+.skill-value {
+  font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800;
+  color: var(--color-accent); min-width: 36px; text-align: right;
+}
+.skill-track {
+  position: relative; height: 8px; background: var(--color-surface-3); border-radius: 4px;
+}
+.skill-fill {
+  position: absolute; left: 0; top: 0; height: 100%;
+  background: linear-gradient(90deg, #0f8a4a, var(--color-accent));
+  border-radius: 4px; transition: width .1s;
+  pointer-events: none;
+}
+.skill-input {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  width: 100%; height: 24px; opacity: 0; cursor: pointer; z-index: 2; margin: 0;
+}
+.skill-labels { display: flex; justify-content: space-between; margin-top: 5px; }
+.skill-label { font-size: 10.5px; color: var(--color-text-3); }
+
+/* Completion screen */
+.ob-complete {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; text-align: center;
+  padding: 48px; gap: 20px;
+}
+.ob-complete-spinner {
+  width: 72px; height: 72px; border-radius: 50%;
+  border: 3px solid var(--color-surface-3);
+  border-top-color: var(--color-accent);
+  animation: spin 1s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ob-complete-done {
+  width: 72px; height: 72px; border-radius: 50%;
+  background: var(--color-accent-dim); border: 2px solid var(--color-accent);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; animation: popIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.ob-complete-title { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; }
+.ob-complete-sub { font-size: 15px; color: var(--color-text-2); max-width: 400px; line-height: 1.6; }
+.ob-complete-items { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 360px; }
+.ob-complete-item {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  border-radius: 10px; padding: 12px 16px; font-size: 13px;
+  animation: fadeSlide .4s ease both;
+}
+.ob-complete-item:nth-child(1) { animation-delay: .1s; }
+.ob-complete-item:nth-child(2) { animation-delay: .2s; }
+.ob-complete-item:nth-child(3) { animation-delay: .3s; }
+.ob-complete-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--color-accent); flex-shrink: 0; }
+
+/* Geography fields reveal */
+.geo-fields { display: none; margin-top: 16px; }
+.geo-fields.visible { display: block; animation: fadeSlide .25s ease; }
+
+/* ── Shared full-page layout ──────────────────────────── */
+.page-screen { height:calc(100vh - 40px); flex-direction: row; }
+.page-content { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+
+/* ── Player Profile ───────────────────────────────────── */
+.profile-header {
+  display: flex; align-items: center; gap: 24px;
+  padding: 28px; border-bottom: 1px solid var(--color-border);
+  background: var(--color-surface); flex-shrink: 0;
+}
+.profile-avatar-lg {
+  width: 80px; height: 80px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg,#0e3d22,#22d67a);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Syne',sans-serif; font-size: 26px; font-weight: 800; color: #fff;
+  border: 3px solid var(--color-accent);
+  box-shadow: 0 0 24px var(--color-accent-glow);
+}
+.profile-meta-main { flex:1; min-width:0; }
+.profile-name { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; }
+.profile-sub { font-size:13px; color:var(--color-text-2); margin-top:4px; display:flex; gap:12px; flex-wrap:wrap; }
+.profile-sub span { display:flex; align-items:center; gap:5px; }
+.profile-actions { display:flex; gap:10px; flex-shrink:0; }
+.profile-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.profile-stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+.profile-stat {
+  background:var(--color-surface); border:1px solid var(--color-border);
+  border-radius:12px; padding:16px 18px; text-align:center;
+}
+.profile-stat-val { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; }
+.profile-stat-lbl { font-size:11px; color:var(--color-text-3); margin-top:3px; text-transform:uppercase; letter-spacing:.07em; }
+.skill-bar-row { display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--color-border); }
+.skill-bar-row:last-child { border-bottom:none; }
+.skill-bar-name { width:130px; font-size:13px; font-weight:500; flex-shrink:0; }
+.skill-bar-track { flex:1; height:7px; background:var(--color-surface-3); border-radius:4px; overflow:hidden; }
+.skill-bar-fill { height:100%; background:linear-gradient(90deg,#0f8a4a,var(--color-accent)); border-radius:4px; }
+.skill-bar-score { width:32px; text-align:right; font-size:13px; font-weight:700; color:var(--color-accent); flex-shrink:0; }
+
+/* ── Career Roadmap ───────────────────────────────────── */
+.roadmap-phases { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+.phase-pill {
+  height:34px; padding:0 16px; border-radius:8px;
+  font-size:13px; font-weight:500; cursor:pointer; transition:all .15s;
+  background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text-2);
+}
+.phase-pill.active { background:var(--color-accent-dim); border-color:var(--color-accent); color:var(--color-accent); font-weight:600; }
+.roadmap-timeline { display:flex; flex-direction:column; gap:0; }
+.rm-item { display:flex; gap:20px; padding:0 0 0 0; position:relative; }
+.rm-item:not(:last-child) .rm-line { position:absolute; left:19px; top:40px; width:2px; height:calc(100% - 8px); background:var(--color-border); }
+.rm-item.done:not(:last-child) .rm-line { background:var(--color-accent); opacity:.4; }
+.rm-dot-wrap { display:flex; flex-direction:column; align-items:center; flex-shrink:0; padding-top:8px; }
+.rm-dot {
+  width:38px; height:38px; border-radius:50%; border:2px solid var(--color-border);
+  background:var(--color-surface-2); display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700; color:var(--color-text-3); z-index:1; flex-shrink:0;
+  transition:all .2s;
+}
+.rm-item.done .rm-dot { background:var(--color-accent); border-color:var(--color-accent); color:#0a1a11; }
+.rm-item.active .rm-dot { border-color:var(--color-accent); color:var(--color-accent); background:var(--color-accent-dim); box-shadow:0 0 0 4px var(--color-accent-dim); }
+.rm-content { flex:1; padding:8px 0 28px; }
+.rm-date { font-size:11px; color:var(--color-text-3); font-weight:600; text-transform:uppercase; letter-spacing:.08em; margin-bottom:4px; }
+.rm-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; margin-bottom:4px; }
+.rm-desc { font-size:13px; color:var(--color-text-2); line-height:1.6; }
+.rm-tags { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; }
+.rm-line { } /* placeholder for positioning */
+
+/* ── Calendar ─────────────────────────────────────────── */
+.cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.cal-month { font-family:'Syne',sans-serif; font-size:20px; font-weight:700; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+.cal-day-name { text-align:center; font-size:11px; font-weight:600; color:var(--color-text-3); text-transform:uppercase; padding:6px 0 10px; }
+.cal-cell {
+  min-height:72px; border-radius:8px; padding:6px 8px;
+  background:var(--color-surface); border:1px solid transparent;
+  cursor:pointer; transition:border-color .12s; font-size:12px; color:var(--color-text-2);
+}
+.cal-cell:hover { border-color:var(--color-border); }
+.cal-cell.today { border-color:var(--color-accent); background:var(--color-accent-dim); }
+.cal-cell.other-month { opacity:.35; }
+.cal-cell-num { font-size:13px; font-weight:600; color:var(--color-text); margin-bottom:4px; }
+.cal-cell.today .cal-cell-num { color:var(--color-accent); }
+.cal-event-dot { font-size:11px; border-radius:4px; padding:1px 5px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cal-event-dot.green { background:var(--color-accent-dim); color:var(--color-accent); }
+.cal-event-dot.orange { background:var(--color-orange-dim); color:var(--color-orange); }
+
+/* ── Opportunities ────────────────────────────────────── */
+.opp-filters { display:flex; gap:8px; margin-bottom:20px; flex-wrap:wrap; }
+.opp-filter-btn {
+  height:32px; padding:0 14px; border-radius:20px; font-size:12.5px; font-weight:500;
+  background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text-2);
+  cursor:pointer; transition:all .12s; display:inline-flex; align-items:center; gap:6px;
+}
+.opp-filter-btn.active { background:var(--color-accent-dim); border-color:var(--color-accent); color:var(--color-accent); }
+.opp-filter-btn.active svg { stroke:var(--color-accent); }
+.opp-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.opp-card {
+  background:var(--color-surface); border:1px solid var(--color-border); border-radius:14px; overflow:hidden;
+  transition:border-color .15s, transform .15s;
+}
+.opp-card:hover { border-color:var(--color-accent); transform:translateY(-2px); }
+.opp-card-top { height:6px; background:var(--color-surface-3); }
+.opp-card-top.camp { background:linear-gradient(90deg,#22d67a,#10a060); }
+.opp-card-top.tryout { background:linear-gradient(90deg,#f59e3a,#e07a10); }
+.opp-card-top.tournament { background:linear-gradient(90deg,#60a5fa,#2563eb); }
+.opp-card-body { padding:16px; }
+.opp-type { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; margin-bottom:8px; }
+.opp-type.camp { color:var(--color-accent); }
+.opp-type.tryout { color:var(--color-orange); }
+.opp-type.tournament { color:#60a5fa; }
+.opp-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; margin-bottom:6px; line-height:1.3; }
+.opp-meta { font-size:12px; color:var(--color-text-2); margin-bottom:12px; }
+.opp-footer { display:flex; align-items:center; justify-content:space-between; }
+.opp-deadline { font-size:11.5px; }
+.opp-deadline.urgent { color:var(--color-orange); font-weight:600; }
+.opp-deadline.ok { color:var(--color-text-3); }
+
+/* ── Subscription ─────────────────────────────────────── */
+.plan-cards-row { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+.plan-card {
+  background:var(--color-surface); border:1.5px solid var(--color-border);
+  border-radius:16px; padding:24px; position:relative; transition:border-color .15s;
+}
+.plan-card.current { border-color:var(--color-accent); }
+.plan-card-badge {
+  position:absolute; top:-12px; left:50%; transform:translateX(-50%);
+  background:var(--color-accent); color:#0a1a11; font-size:11px; font-weight:700;
+  padding:3px 12px; border-radius:20px; text-transform:uppercase; letter-spacing:.06em; white-space:nowrap;
+}
+.plan-name { font-family:'Syne',sans-serif; font-size:18px; font-weight:800; margin-bottom:8px; }
+.plan-price { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; line-height:1; }
+.plan-price sup { font-size:16px; font-weight:600; vertical-align:top; margin-top:6px; }
+.plan-price sub { font-size:13px; font-weight:400; color:var(--color-text-2); }
+.plan-divider { height:1px; background:var(--color-border); margin:16px 0; }
+.plan-feature { display:flex; align-items:flex-start; gap:8px; font-size:13px; margin-bottom:8px; color:var(--color-text-2); }
+.plan-feature-check { color:var(--color-accent); font-size:14px; flex-shrink:0; margin-top:1px; }
+.plan-feature-x { color:var(--color-text-3); font-size:14px; flex-shrink:0; margin-top:1px; }
+.billing-card {
+  background:var(--color-surface); border:1px solid var(--color-border);
+  border-radius:14px; padding:20px;
+}
+.billing-row { display:flex; justify-content:space-between; align-items:center; padding:12px 0; border-bottom:1px solid var(--color-border); }
+.billing-row:last-child { border-bottom:none; }
+.billing-label { font-size:13px; color:var(--color-text-2); }
+.billing-value { font-size:13.5px; font-weight:600; }
+
+/* ── Payment Success ──────────────────────────────────── */
+.payment-success-wrap {
+  flex:1; display:flex; align-items:center; justify-content:center;
+  background:var(--color-bg);
+}
+.payment-success-card {
+  background:var(--color-surface); border:1px solid var(--color-border);
+  border-radius:20px; padding:48px 40px; max-width:480px; width:100%; text-align:center;
+  animation:fadeSlide .4s ease;
+}
+.payment-success-icon {
+  width:72px; height:72px; border-radius:50%; margin:0 auto 24px;
+  background:var(--color-accent-dim); border:2px solid var(--color-accent);
+  display:flex; align-items:center; justify-content:center; font-size:28px;
+  animation:popIn .5s cubic-bezier(.34,1.56,.64,1);
+}
+.payment-receipt { background:var(--color-surface-2); border-radius:12px; padding:16px; margin:24px 0; text-align:left; }
+.receipt-row { display:flex; justify-content:space-between; padding:8px 0; font-size:13.5px; }
+.receipt-row + .receipt-row { border-top:1px solid var(--color-border); }
+.receipt-label { color:var(--color-text-2); }
+.receipt-value { font-weight:600; }
+.receipt-total .receipt-label { color:var(--color-text); font-weight:600; }
+.receipt-total .receipt-value { color:var(--color-accent); font-size:15px; }
+
+/* ── Error & Empty States ─────────────────────────────── */
+.states-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
+.state-card {
+  background:var(--color-surface); border:1px solid var(--color-border);
+  border-radius:14px; padding:32px 24px; display:flex; flex-direction:column;
+  align-items:center; text-align:center; gap:12px;
+}
+.state-icon { font-size:36px; line-height:1; }
+.state-code { font-family:'Syne',sans-serif; font-size:32px; font-weight:800; color:var(--color-text-3); }
+.state-title { font-family:'Syne',sans-serif; font-size:16px; font-weight:700; }
+.state-desc { font-size:13px; color:var(--color-text-2); line-height:1.6; }
+.empty-list {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:48px 24px; text-align:center; gap:12px;
+  border:1.5px dashed var(--color-border); border-radius:14px;
+}
+.empty-list-icon { font-size:40px; opacity:.5; }
+.skeleton { border-radius:6px; background:linear-gradient(90deg,var(--color-surface-2) 25%,var(--color-surface-3) 50%,var(--color-surface-2) 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; }
+@keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+.skeleton-card { background:var(--color-surface); border:1px solid var(--color-border); border-radius:14px; padding:16px; }
+.skeleton-line { height:12px; margin-bottom:8px; }
+.skeleton-line.w-full { width:100%; }
+.skeleton-line.w-3\/4 { width:75%; }
+.skeleton-line.w-1\/2 { width:50%; }
+.skeleton-line.w-1\/4 { width:25%; }
+</style>
+</head>
+<body>
+
+<!-- ── Screen Navigation (dev) ──────────────────────── -->
+<div class="screen-nav" id="screenNav">
+  <button onclick="showScreen('login')" class="active" id="tab-login">01 Login</button>
+  <button onclick="showScreen('recovery')" id="tab-recovery">02 Recovery</button>
+  <button onclick="showScreen('onboarding')" id="tab-onboarding">03 Onboarding</button>
+  <button onclick="showScreen('dashboard')" id="tab-dashboard">04 Dashboard</button>
+  <button onclick="showScreen('chat')" id="tab-chat">05 AI Chat</button>
+  <button onclick="showScreen('roadmap')" id="tab-roadmap">06 Roadmap</button>
+  <button onclick="showScreen('calendar')" id="tab-calendar">07 Calendar</button>
+  <button onclick="showScreen('opportunities')" id="tab-opportunities">08 Opportunities</button>
+  <button onclick="showScreen('profile')" id="tab-profile">09 Profile</button>
+  <button onclick="showScreen('subscription')" id="tab-subscription">10 Subscription</button>
+  <button onclick="showScreen('payment')" id="tab-payment">11 Payment</button>
+  <button onclick="showScreen('settings')" id="tab-settings">12 Settings</button>
+  <button onclick="showScreen('errors')" id="tab-errors">13 States</button>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 01 — Login / Registration
+     ══════════════════════════════════════════════════ -->
+<div class="screen active" id="screen-login" style="height:calc(100vh - 40px)">
+  <div class="login-wrap">
+
+    <!-- Left branding panel — NO green circle behind stats -->
+    <div class="login-panel">
+      <div class="login-panel-logo">Up<span>Way</span></div>
+      <div class="login-panel-tagline">AI Assistant for Hockey Parents</div>
+
+      <div class="login-stats">
+        <!-- Statistics: no decorative circle, clean numbers -->
+        <div class="stat-item">
+          <div class="stat-num">12</div>
+          <div class="stat-label">Countries</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">150+</div>
+          <div class="stat-label">Academies</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">2,400+</div>
+          <div class="stat-label">Active Families</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right auth card -->
+    <div class="login-main">
+      <div class="auth-card">
+        <div class="auth-card-top-accent"></div>
+        <div class="auth-card-body">
+          <div class="auth-tabs">
+            <button class="auth-tab active" onclick="setAuthTab(this,'signin')">Sign In</button>
+            <button class="auth-tab" onclick="setAuthTab(this,'register')">Create Account</button>
+          </div>
+
+          <!-- Sign In -->
+          <div id="signin-form">
+            <div class="auth-card-title font-display">Welcome back</div>
+            <div class="auth-card-sub">Sign in to continue to your hockey dashboard.</div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input class="form-input" type="email" value="andrey.morozov@mail.ru">
+            </div>
+            <div class="form-group">
+              <div class="form-row">
+                <label class="form-label" style="margin:0">Password</label>
+                <a href="#" class="form-link" onclick="showScreen('recovery');return false">Forgot password?</a>
+              </div>
+              <input class="form-input" type="password" value="••••••••••">
+            </div>
+            <button class="auth-submit btn" onclick="showScreen('onboarding')">Sign In</button>
+            <div class="auth-divider">or continue with</div>
+            <button class="btn-google btn">
+              <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Continue with Google
+            </button>
+          </div>
+
+          <!-- Create Account -->
+          <div id="register-form" style="display:none">
+            <div class="auth-card-title font-display">Create account</div>
+            <div class="auth-card-sub">Join UpWay and start your player's journey to the top.</div>
+            <div class="form-group">
+              <label class="form-label">Full Name</label>
+              <input class="form-input" type="text" placeholder="Andrey Morozov">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input class="form-input" type="email" placeholder="you@example.com">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Password</label>
+              <input class="form-input" type="password" placeholder="Min. 8 characters">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Confirm Password</label>
+              <input class="form-input" type="password" placeholder="Repeat your password">
+            </div>
+            <div class="form-check" style="margin:14px 0 18px">
+              <input type="checkbox" id="agree-privacy">
+              <label class="form-check-box" for="agree-privacy"></label>
+              <label class="form-check-label" for="agree-privacy">
+                I agree to the <a href="#">Privacy Policy</a> and <a href="#">Terms of Service</a>
+              </label>
+            </div>
+            <button class="auth-submit btn" onclick="showScreen('onboarding')">Create Account</button>
+            <div class="auth-divider">or continue with</div>
+            <button class="btn-google btn">
+              <svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+              Continue with Google
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 02 — Password Recovery
+     ══════════════════════════════════════════════════ -->
+<div class="screen" id="screen-recovery" style="height:calc(100vh - 40px)">
+  <div class="login-wrap">
+    <div class="login-panel">
+      <div class="login-panel-logo">Up<span>Way</span></div>
+      <div class="login-panel-tagline">AI Assistant for Hockey Parents</div>
+      <div class="login-stats">
+        <div class="stat-item"><div class="stat-num">12</div><div class="stat-label">Countries</div></div>
+        <div class="stat-item"><div class="stat-num">150+</div><div class="stat-label">Academies</div></div>
+        <div class="stat-item"><div class="stat-num">2,400+</div><div class="stat-label">Active Families</div></div>
+      </div>
+    </div>
+    <div class="login-main">
+      <div class="auth-card" style="max-width:440px">
+        <div class="auth-card-top-accent"></div>
+        <div class="auth-card-body">
+
+          <!-- State 1: Enter email -->
+          <div class="recovery-state active" id="rec-input">
+            <div style="margin-bottom:20px">
+              <a href="#" class="form-link" style="font-size:12.5px;display:flex;align-items:center;gap:5px" onclick="showScreen('login');return false">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                Back to Sign In
+              </a>
+            </div>
+            <div class="auth-card-title font-display">Forgot password?</div>
+            <div class="auth-card-sub" style="margin-bottom:24px">Enter your email and we'll send you a reset link.</div>
+            <div class="form-group">
+              <label class="form-label">Email address</label>
+              <input class="form-input" type="email" id="rec-email-input" placeholder="you@example.com">
+            </div>
+            <button class="auth-submit btn" onclick="showRecoveryEmailSent()">Send Reset Link</button>
+          </div>
+
+          <!-- State 2: Check your email -->
+          <div class="recovery-state" id="rec-sent">
+            <div style="margin-bottom:20px">
+              <a href="#" class="form-link" style="font-size:12.5px;display:flex;align-items:center;gap:5px" onclick="showScreen('login');return false">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                Back to Sign In
+              </a>
+            </div>
+            <div class="recovery-email-icon">📧</div>
+            <div class="auth-card-title font-display" style="text-align:center">Check your email</div>
+            <div class="auth-card-sub" style="text-align:center;margin-bottom:8px">
+              We sent a password reset link to<br>
+              <strong id="rec-sent-email" style="color:var(--color-text)">your@email.com</strong>
+            </div>
+            <div style="text-align:center;margin:20px 0">
+              <div style="font-size:13px;color:var(--color-text-2);margin-bottom:12px">Didn't receive the email? Check your spam folder or</div>
+              <div id="resend-wrap">
+                <span class="resend-timer">
+                  Resend available in <span class="countdown" id="rec-countdown">59</span>s
+                </span>
+              </div>
+              <div id="resend-btn-wrap" style="display:none">
+                <button class="resend-link" onclick="startResendTimer()">Resend email →</button>
+              </div>
+            </div>
+            <button class="auth-submit btn" onclick="showScreen('login')">Back to Sign In</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 03 — Player Onboarding (5 steps)
+     ══════════════════════════════════════════════════ -->
+<div class="screen" id="screen-onboarding" style="height:calc(100vh - 40px)">
+  <div class="onboarding-wrap">
+
+    <!-- Left step list -->
+    <div class="onboarding-side">
+      <div class="onboarding-logo">Up<span>Way</span></div>
+      <div class="onboarding-steps-list" id="ob-steps-list">
+        <div class="ob-step-item active" data-step="1">
+          <div class="ob-step-dot">1</div>
+          <div class="ob-step-info">
+            <div class="ob-step-num">Step 1</div>
+            <div class="ob-step-name">Player Information</div>
+          </div>
+        </div>
+        <div class="ob-step-item" data-step="2">
+          <div class="ob-step-dot">2</div>
+          <div class="ob-step-info">
+            <div class="ob-step-num">Step 2</div>
+            <div class="ob-step-name">Geography</div>
+          </div>
+        </div>
+        <div class="ob-step-item" data-step="3">
+          <div class="ob-step-dot">3</div>
+          <div class="ob-step-info">
+            <div class="ob-step-num">Step 3</div>
+            <div class="ob-step-name">Current Level</div>
+          </div>
+        </div>
+        <div class="ob-step-item" data-step="4">
+          <div class="ob-step-dot">4</div>
+          <div class="ob-step-info">
+            <div class="ob-step-num">Step 4</div>
+            <div class="ob-step-name">Goals</div>
+          </div>
+        </div>
+        <div class="ob-step-item" data-step="5">
+          <div class="ob-step-dot">5</div>
+          <div class="ob-step-info">
+            <div class="ob-step-num">Step 5</div>
+            <div class="ob-step-name">Skills Assessment</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="onboarding-main">
+      <div class="onboarding-header">
+        <div class="onboarding-progress-bar">
+          <div class="onboarding-progress-fill" id="ob-progress" style="width:20%"></div>
+        </div>
+        <div id="ob-title-wrap">
+          <div class="onboarding-step-title" id="ob-title">Player Information</div>
+          <div class="onboarding-step-sub" id="ob-sub">Tell us about the player you're supporting.</div>
+        </div>
+      </div>
+
+      <div class="onboarding-body">
+
+        <!-- Step 1: Player Info -->
+        <div class="ob-step-panel active" id="ob-panel-1">
+          <div class="ob-grid-2">
+            <div class="ob-form-group" style="grid-column:1/-1">
+              <label class="ob-label">Player Name</label>
+              <input class="ob-input" type="text" placeholder="e.g. Maxim Morozov">
+            </div>
+            <div class="ob-form-group">
+              <label class="ob-label">Age</label>
+              <div class="ob-input-unit">
+                <input class="ob-input" type="number" placeholder="14" min="5" max="25">
+                <span>yrs</span>
+              </div>
+            </div>
+            <div class="ob-form-group">
+              <label class="ob-label">Height</label>
+              <div class="ob-input-unit">
+                <input class="ob-input" type="number" placeholder="172" min="100" max="220">
+                <span>cm</span>
+              </div>
+            </div>
+            <div class="ob-form-group">
+              <label class="ob-label">Weight</label>
+              <div class="ob-input-unit">
+                <input class="ob-input" type="number" placeholder="63" min="30" max="130">
+                <span>kg</span>
+              </div>
+            </div>
+          </div>
+          <div class="ob-form-group" style="margin-top:8px">
+            <label class="ob-label">Position</label>
+            <div class="ob-pill-group">
+              <button class="ob-pill" onclick="selectPill(this,'position')">
+                <span style="margin-right:6px">⚡</span> Forward
+              </button>
+              <button class="ob-pill" onclick="selectPill(this,'position')">
+                <span style="margin-right:6px">🛡</span> Defenseman
+              </button>
+              <button class="ob-pill" onclick="selectPill(this,'position')">
+                <span style="margin-right:6px">🥅</span> Goaltender
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Geography -->
+        <div class="ob-step-panel" id="ob-panel-2">
+          <div class="ob-form-group">
+            <label class="ob-label">Country</label>
+            <div class="ob-pill-group">
+              <button class="ob-pill ob-country-pill" onclick="selectCountry(this,'by')">
+                <span class="ob-country-flag">🇧🇾</span> Belarus
+              </button>
+              <button class="ob-pill ob-country-pill" onclick="selectCountry(this,'ru')">
+                <span class="ob-country-flag">🇷🇺</span> Russia
+              </button>
+              <button class="ob-pill ob-country-pill" onclick="selectCountry(this,'other')">
+                <span class="ob-country-flag">🌍</span> Other
+              </button>
+            </div>
+          </div>
+
+          <div class="geo-fields" id="geo-fields">
+            <div class="ob-grid-2">
+              <div class="ob-form-group">
+                <label class="ob-label">City</label>
+                <input class="ob-input" type="text" placeholder="e.g. Minsk">
+              </div>
+              <div class="ob-form-group">
+                <label class="ob-label">Team</label>
+                <input class="ob-input" type="text" placeholder="e.g. Dynamo Minsk">
+              </div>
+              <div class="ob-form-group" style="grid-column:1/-1">
+                <label class="ob-label">Hockey School</label>
+                <input class="ob-input" type="text" placeholder="e.g. DYUSSH №5 Minsk">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Current Level -->
+        <div class="ob-step-panel" id="ob-panel-3">
+          <div class="ob-pill-group" style="flex-direction:column;align-items:stretch">
+            <button class="ob-pill" style="justify-content:flex-start;padding:0 20px;height:52px" onclick="selectPill(this,'level')">Amateur</button>
+            <button class="ob-pill" style="justify-content:flex-start;padding:0 20px;height:52px" onclick="selectPill(this,'level')">Youth Sports School <span style="font-size:11px;opacity:.6;margin-left:6px">(DYuSSH)</span></button>
+            <button class="ob-pill" style="justify-content:flex-start;padding:0 20px;height:52px" onclick="selectPill(this,'level')">Specialized Youth Sports School <span style="font-size:11px;opacity:.6;margin-left:6px">(SDYuShOR)</span></button>
+            <button class="ob-pill" style="justify-content:flex-start;padding:0 20px;height:52px" onclick="selectPill(this,'level')">National Championship</button>
+            <button class="ob-pill" style="justify-content:flex-start;padding:0 20px;height:52px" onclick="selectPill(this,'level')">Professional Club</button>
+            <button class="ob-pill" style="justify-content:flex-start;padding:0 20px;height:52px" onclick="selectPill(this,'level')">Academy</button>
+          </div>
+        </div>
+
+        <!-- Step 4: Goals -->
+        <div class="ob-step-panel" id="ob-panel-4">
+          <div style="font-size:13px;color:var(--color-text-2);margin-bottom:16px">Select all that apply — you can choose multiple goals.</div>
+          <div class="ob-goals-grid">
+            <div class="ob-goal-card" onclick="toggleGoal(this)">
+              <div class="ob-goal-icon">🏫</div>
+              <div class="ob-goal-title">Top-tier hockey school</div>
+              <div class="ob-goal-league">Academy / School</div>
+            </div>
+            <div class="ob-goal-card" onclick="toggleGoal(this)">
+              <div class="ob-goal-icon">🏒</div>
+              <div class="ob-goal-title">Club academy</div>
+              <div class="ob-goal-league">Club development</div>
+            </div>
+            <div class="ob-goal-card" onclick="toggleGoal(this)">
+              <div class="ob-goal-icon">🥇</div>
+              <div class="ob-goal-title">Extraliga</div>
+              <div class="ob-goal-league">National top flight</div>
+            </div>
+            <div class="ob-goal-card" onclick="toggleGoal(this)">
+              <div class="ob-goal-icon">⭐</div>
+              <div class="ob-goal-title">MHL</div>
+              <div class="ob-goal-league">Youth Hockey League</div>
+            </div>
+            <div class="ob-goal-card" onclick="toggleGoal(this)">
+              <div class="ob-goal-icon">🚀</div>
+              <div class="ob-goal-title">VHL</div>
+              <div class="ob-goal-league">Higher League</div>
+            </div>
+            <div class="ob-goal-card" onclick="toggleGoal(this)">
+              <div class="ob-goal-icon">🏆</div>
+              <div class="ob-goal-title">KHL</div>
+              <div class="ob-goal-league">Kontinental Hockey League</div>
+            </div>
+            <div class="ob-goal-card" onclick="toggleGoal(this)">
+              <div class="ob-goal-icon">🌍</div>
+              <div class="ob-goal-title">National team</div>
+              <div class="ob-goal-league">International</div>
+            </div>
+            <div class="ob-goal-card" onclick="toggleGoal(this)">
+              <div class="ob-goal-icon">🎓</div>
+              <div class="ob-goal-title">Sports education</div>
+              <div class="ob-goal-league">Academic path</div>
+            </div>
+            <div class="ob-goal-card" onclick="toggleGoal(this)" id="ob-custom-goal-card">
+              <div class="ob-goal-icon">✏️</div>
+              <div class="ob-goal-title">Custom goal</div>
+              <div class="ob-goal-league">Define your own</div>
+            </div>
+          </div>
+          <div class="ob-custom-goal" id="ob-custom-input" style="display:none">
+            <input class="ob-input" type="text" placeholder="Describe your custom goal…">
+          </div>
+        </div>
+
+        <!-- Step 5: Skills -->
+        <div class="ob-step-panel" id="ob-panel-5">
+          <div style="font-size:13px;color:var(--color-text-2);margin-bottom:24px">Rate each skill honestly — this helps build an accurate baseline for your development plan.</div>
+
+          <div class="skill-row">
+            <div class="skill-header">
+              <div class="skill-name">⛸ Skating</div>
+              <div class="skill-value" id="val-skating">5</div>
+            </div>
+            <div class="skill-track">
+              <div class="skill-fill" id="fill-skating" style="width:50%"></div>
+              <input type="range" class="skill-input" min="1" max="10" value="5"
+                oninput="updateSkill('skating',this.value)">
+            </div>
+            <div class="skill-labels"><span class="skill-label">Beginner</span><span class="skill-label">Elite</span></div>
+          </div>
+
+          <div class="skill-row">
+            <div class="skill-header">
+              <div class="skill-name">🏒 Shooting</div>
+              <div class="skill-value" id="val-shooting">5</div>
+            </div>
+            <div class="skill-track">
+              <div class="skill-fill" id="fill-shooting" style="width:50%"></div>
+              <input type="range" class="skill-input" min="1" max="10" value="5"
+                oninput="updateSkill('shooting',this.value)">
+            </div>
+            <div class="skill-labels"><span class="skill-label">Beginner</span><span class="skill-label">Elite</span></div>
+          </div>
+
+          <div class="skill-row">
+            <div class="skill-header">
+              <div class="skill-name">🎯 Passing</div>
+              <div class="skill-value" id="val-passing">5</div>
+            </div>
+            <div class="skill-track">
+              <div class="skill-fill" id="fill-passing" style="width:50%"></div>
+              <input type="range" class="skill-input" min="1" max="10" value="5"
+                oninput="updateSkill('passing',this.value)">
+            </div>
+            <div class="skill-labels"><span class="skill-label">Beginner</span><span class="skill-label">Elite</span></div>
+          </div>
+
+          <div class="skill-row">
+            <div class="skill-header">
+              <div class="skill-name">💪 Physical Fitness</div>
+              <div class="skill-value" id="val-fitness">5</div>
+            </div>
+            <div class="skill-track">
+              <div class="skill-fill" id="fill-fitness" style="width:50%"></div>
+              <input type="range" class="skill-input" min="1" max="10" value="5"
+                oninput="updateSkill('fitness',this.value)">
+            </div>
+            <div class="skill-labels"><span class="skill-label">Beginner</span><span class="skill-label">Elite</span></div>
+          </div>
+
+          <div class="skill-row">
+            <div class="skill-header">
+              <div class="skill-name">🧠 Hockey Sense</div>
+              <div class="skill-value" id="val-sense">5</div>
+            </div>
+            <div class="skill-track">
+              <div class="skill-fill" id="fill-sense" style="width:50%"></div>
+              <input type="range" class="skill-input" min="1" max="10" value="5"
+                oninput="updateSkill('sense',this.value)">
+            </div>
+            <div class="skill-labels"><span class="skill-label">Beginner</span><span class="skill-label">Elite</span></div>
+          </div>
+        </div>
+
+      </div><!-- /onboarding-body -->
+
+      <!-- Footer nav -->
+      <div class="onboarding-footer" id="ob-footer">
+        <button class="btn btn-ghost" id="ob-back-btn" onclick="obStep(-1)" style="display:none">← Back</button>
+        <div style="font-size:12px;color:var(--color-text-3)" id="ob-step-counter">Step 1 of 5</div>
+        <button class="btn btn-primary" id="ob-next-btn" onclick="obStep(1)">Next Step →</button>
+      </div>
+
+      <!-- Completion screen (shown after step 5) -->
+      <div class="ob-complete" id="ob-complete" style="display:none">
+        <div class="ob-complete-spinner" id="ob-spinner"></div>
+        <div id="ob-complete-content" style="display:none;flex-direction:column;align-items:center;gap:20px">
+          <div class="ob-complete-done">✓</div>
+          <div class="ob-complete-title">Plan is ready!</div>
+          <div class="ob-complete-sub">We've built a personalized development roadmap for your player based on their profile, goals, and current skill level.</div>
+          <div class="ob-complete-items">
+            <div class="ob-complete-item"><div class="ob-complete-dot"></div>Personalized roadmap created</div>
+            <div class="ob-complete-item"><div class="ob-complete-dot"></div>Next steps identified & prioritized</div>
+            <div class="ob-complete-item"><div class="ob-complete-dot"></div>AI Consultant ready to assist</div>
+          </div>
+          <button class="btn btn-primary btn-lg" onclick="showScreen('dashboard')" style="margin-top:8px">Go to Dashboard →</button>
+        </div>
+      </div>
+
+    </div><!-- /onboarding-main -->
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREENS 04 / 05 / 12 — App Shell
+     ══════════════════════════════════════════════════ -->
+<div class="screen" id="screen-dashboard" style="height:calc(100vh - 40px); flex-direction:row">
+  <!-- Shared sidebar injected via JS -->
+  <div id="sidebar-dashboard"></div>
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title font-display">Good morning, Andrey 👋</div>
+        <div class="topbar-sub">Wednesday, June 4, 2026</div>
+      </div>
+      <div class="topbar-spacer"></div>
+      <div class="player-badge">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+        <strong>Max</strong>&nbsp;· 14 · Forward · Regional
+      </div>
+    </div>
+    <div class="content-area">
+      <div class="dashboard-grid">
+
+        <!-- SOLE CTA: Next Step card -->
+        <div class="next-step-card">
+          <div class="next-step-inner">
+            <div class="next-step-meta">
+              <div class="next-step-badge">
+                <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                Next Step
+              </div>
+              <div class="next-step-title">Apply for Minsk Open Summer Camp</div>
+              <div class="next-step-desc">Registration closes Jul 15 — 8 spots remaining. This aligns with Phase 1 skill-building goals.</div>
+            </div>
+            <div class="next-step-action">
+              <button class="btn btn-primary btn-lg">Register Now →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metrics row: measured results + context -->
+        <div class="cards-row">
+          <!-- Goal Progress -->
+          <div class="metric-card">
+            <div class="metric-card-label">Main Goal</div>
+            <div class="metric-card-value text-accent">23%</div>
+            <div class="metric-card-context">Reach MHL · 24 months remaining</div>
+            <div class="metric-progress">
+              <div class="progress-bar"><div class="progress-fill" style="width:23%"></div></div>
+            </div>
+          </div>
+
+          <!-- Skating — measured result -->
+          <div class="metric-card">
+            <div class="metric-card-label">Skating Score</div>
+            <div class="metric-card-value" style="color:var(--color-text)">7.5<span style="font-size:16px;color:var(--color-text-3)">/10</span></div>
+            <div class="metric-card-context">Measured Jun 2 · +0.5 since last month</div>
+            <div class="badge-row">
+              <span class="badge badge-green">↑ On Track</span>
+              <span class="badge badge-gray">Top 30%</span>
+            </div>
+          </div>
+
+          <!-- Goal Probability -->
+          <div class="metric-card">
+            <div class="metric-card-label">Goal Probability</div>
+            <div class="metric-card-value" style="color:var(--color-orange)">65%</div>
+            <div class="metric-card-context">Medium confidence · AI updated today</div>
+            <div class="badge-row">
+              <span class="badge badge-orange">▲ Limited game exp.</span>
+            </div>
+            <div style="margin-top:6px;font-size:12px;color:var(--color-text-2)">✓ Strong skating score</div>
+          </div>
+        </div>
+
+        <!-- Bottom row -->
+        <div class="bottom-row">
+          <!-- Roadmap -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Roadmap · Phase 1: Foundation</div>
+              <button class="btn btn-ghost btn-sm">View full →</button>
+            </div>
+            <div class="card-body">
+              <div style="font-size:12px;color:var(--color-text-2);margin-bottom:12px">Build the base for Max's hockey development</div>
+              <div class="roadmap-step">
+                <div class="step-num step-done">✓</div>
+                <div><div class="step-title">Attend 3+ regional tournaments</div><div class="step-meta">Completed Apr 2026</div></div>
+              </div>
+              <div class="roadmap-step">
+                <div class="step-num step-active">2</div>
+                <div><div class="step-title">Apply for summer development camp</div><div class="step-meta" style="color:var(--color-accent)">In progress · deadline Jul 15</div></div>
+              </div>
+              <div class="roadmap-step">
+                <div class="step-num step-todo">3</div>
+                <div><div class="step-title">Reach skating score ≥ 8.0</div><div class="step-meta">Target: Sep 2026</div></div>
+              </div>
+              <div class="roadmap-step">
+                <div class="step-num step-todo">4</div>
+                <div><div class="step-title">Scout report from MHL academy</div><div class="step-meta">Target: Nov 2026</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Calendar / Events — color-coded -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Upcoming Events</div>
+              <span class="text-tiny">Color: <span style="color:var(--color-accent)">●</span> Submitted &nbsp;<span style="color:var(--color-orange)">●</span> Action needed</span>
+            </div>
+            <div class="card-body" style="padding-top:8px">
+              <div class="event-item">
+                <div class="event-dot green"></div>
+                <div>
+                  <div class="event-title">Minsk Open — Application Sent</div>
+                  <div class="event-meta">Submitted Jun 1 · awaiting confirmation</div>
+                  <div class="event-date">Jun 1, 2026</div>
+                </div>
+              </div>
+              <div class="event-item">
+                <div class="event-dot green"></div>
+                <div>
+                  <div class="event-title">Regional Qualifier — Registered</div>
+                  <div class="event-meta">Team confirmation received</div>
+                  <div class="event-date">Jun 18, 2026</div>
+                </div>
+              </div>
+              <div class="event-item">
+                <div class="event-dot orange"></div>
+                <div>
+                  <div class="event-title">Summer Camp — Deadline</div>
+                  <div class="event-meta" style="color:var(--color-orange)">Registration closes Jul 15 — act now</div>
+                  <div class="event-date">Jul 15, 2026</div>
+                </div>
+              </div>
+              <div class="event-item">
+                <div class="event-dot orange"></div>
+                <div>
+                  <div class="event-title">Academy Open Day — RSVP due</div>
+                  <div class="event-meta" style="color:var(--color-orange)">RSVP by Jul 30</div>
+                  <div class="event-date">Aug 5, 2026</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 05 — AI Chat
+     ══════════════════════════════════════════════════ -->
+<div class="screen" id="screen-chat" style="height:calc(100vh - 40px); flex-direction:row">
+  <div id="sidebar-chat"></div>
+  <div class="main" style="overflow:hidden">
+    <div class="chat-layout">
+      <!-- Chat history panel -->
+      <div class="chat-history-panel">
+        <div class="chat-history-head">
+          <button class="btn btn-primary" style="width:100%;height:var(--btn-height-sm);font-size:13px">+ New Chat</button>
+        </div>
+        <div class="chat-history-list">
+          <div class="chat-section-label">Today</div>
+          <div class="chat-history-item active">
+            <div class="chat-history-title">Summer camp strategy</div>
+            <div class="chat-history-date">10:24 AM</div>
+          </div>
+          <div class="chat-history-item">
+            <div class="chat-history-title">MHL timeline review</div>
+            <div class="chat-history-date">Yesterday</div>
+          </div>
+          <div class="chat-section-label">This week</div>
+          <div class="chat-history-item">
+            <div class="chat-history-title">Skating improvement drills</div>
+            <div class="chat-history-date">Jun 2</div>
+          </div>
+          <div class="chat-history-item">
+            <div class="chat-history-title">Tournament preparation</div>
+            <div class="chat-history-date">Jun 1</div>
+          </div>
+          <div class="chat-section-label">Earlier</div>
+          <div class="chat-history-item">
+            <div class="chat-history-title">Nutrition plan for juniors</div>
+            <div class="chat-history-date">May 28</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Chat main area -->
+      <div class="chat-main">
+        <div class="chat-topbar">
+          <div>
+            <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700">AI Consultant</div>
+            <div style="font-size:11.5px;color:var(--color-accent)">● Online</div>
+          </div>
+          <div class="topbar-spacer"></div>
+          <div class="player-badge">
+            <strong>Max</strong>&nbsp;· 14 · Forward · MHL goal
+          </div>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+          <!-- AI opens -->
+          <div class="msg msg-ai">
+            <div class="msg-avatar msg-avatar-ai">🤖</div>
+            <div class="msg-content">
+              <div class="msg-bubble">
+                Welcome back, Andrey! Max's skating has improved to <strong style="color:var(--color-accent)">7.5/10</strong> — on track for the MHL timeline. Let's discuss next priorities.
+                <div class="msg-context-card">
+                  <strong>Context loaded:</strong> Max · 14y · Forward · Minsk Regional · Goal: MHL by Jun 2028
+                </div>
+              </div>
+              <div class="msg-time">10:24 AM</div>
+            </div>
+          </div>
+
+          <!-- Parent -->
+          <div class="msg msg-parent">
+            <div class="msg-avatar msg-avatar-parent">AM</div>
+            <div class="msg-content">
+              <div class="msg-bubble">
+                What should we focus on for the summer camp application?
+              </div>
+              <div class="msg-time">10:26 AM</div>
+            </div>
+          </div>
+
+          <!-- AI reply -->
+          <div class="msg msg-ai">
+            <div class="msg-avatar msg-avatar-ai">🤖</div>
+            <div class="msg-content">
+              <div class="msg-bubble">
+                For the Minsk Open Summer Camp, I'd prioritize three things:<br><br>
+                <strong>1. Complete the application by Jul 15</strong> — only 8 spots remain. I can help you fill out the form.<br><br>
+                <strong>2. Prepare a highlight reel</strong> — camps expect 3–5 minutes of game footage. Max's Jun 2 tournament footage is ideal.<br><br>
+                <strong>3. Coach reference letter</strong> — ask Coach Petrov this week. A 2-week lead time is typical.
+              </div>
+              <div class="msg-time">10:27 AM</div>
+            </div>
+          </div>
+
+          <!-- Parent -->
+          <div class="msg msg-parent">
+            <div class="msg-avatar msg-avatar-parent">AM</div>
+            <div class="msg-content">
+              <div class="msg-bubble">
+                Can you draft the reference request email for Coach Petrov?
+              </div>
+              <div class="msg-time">10:29 AM</div>
+            </div>
+          </div>
+
+          <!-- AI reply -->
+          <div class="msg msg-ai">
+            <div class="msg-avatar msg-avatar-ai">🤖</div>
+            <div class="msg-content">
+              <div class="msg-bubble">
+                Of course! Here's a draft:<br><br>
+                <em style="color:var(--color-text-2)">"Dear Coach Petrov, I'm writing to request a reference letter for Max's application to the Minsk Open Summer Camp (deadline Jul 15). The program is highly competitive and a letter from you highlighting his dedication and recent skating improvements would carry significant weight. I'd be happy to provide any details you need. Thank you for your time and support. — Andrey Morozov"</em>
+              </div>
+              <div class="msg-time">10:30 AM</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Input bar — always visible -->
+        <div class="chat-input-bar">
+          <div class="quick-chips">
+            <button class="quick-chip" onclick="insertChip(this)">What's Max's next milestone?</button>
+            <button class="quick-chip" onclick="insertChip(this)">Review tournament schedule</button>
+            <button class="quick-chip" onclick="insertChip(this)">Improve skating score</button>
+          </div>
+          <div class="chat-input-wrap">
+            <textarea class="chat-input" id="chatInput" placeholder="Ask anything about Max's hockey journey…" rows="1"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"
+              oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"></textarea>
+            <button class="chat-send" onclick="sendMsg()">
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 12 — Settings
+     ══════════════════════════════════════════════════ -->
+<div class="screen" id="screen-settings" style="height:calc(100vh - 40px); flex-direction:row">
+  <div id="sidebar-settings"></div>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title font-display">Settings</div>
+    </div>
+    <div class="settings-wrap">
+      <div class="settings-grid">
+
+        <!-- Notifications -->
+        <div class="settings-card">
+          <div class="settings-card-header">Notifications</div>
+          <div class="settings-card-body">
+            <div class="setting-row">
+              <div class="setting-icon">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--color-accent)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+              </div>
+              <div class="setting-info">
+                <div class="setting-name">Event reminders</div>
+                <div class="setting-desc">Tournament deadlines & calendar alerts</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+            <div class="setting-row">
+              <div class="setting-icon">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--color-accent)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              </div>
+              <div class="setting-info">
+                <div class="setting-name">Progress updates</div>
+                <div class="setting-desc">Weekly skill score changes</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+            <div class="setting-row">
+              <div class="setting-icon">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--color-text-2)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              </div>
+              <div class="setting-info">
+                <div class="setting-name">Email digest</div>
+                <div class="setting-desc">Monthly summary to inbox</div>
+              </div>
+              <button class="toggle" onclick="this.classList.toggle('on')"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Language — two-option toggle, no frames -->
+        <div class="settings-card">
+          <div class="settings-card-header">Language & Region</div>
+          <div class="settings-card-body">
+            <div class="lang-toggle-wrap">
+              <div class="lang-toggle-label">Interface language</div>
+              <div class="lang-toggle" id="langToggle">
+                <button class="lang-opt active" onclick="setLang(this,'en')">
+                  <span class="lang-flag">🇬🇧</span> English
+                </button>
+                <button class="lang-opt" onclick="setLang(this,'ru')">
+                  <span class="lang-flag">🇷🇺</span> Русский
+                </button>
+              </div>
+            </div>
+            <div class="setting-row">
+              <div class="setting-icon">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--color-text-2)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M2 12h20M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg>
+              </div>
+              <div class="setting-info">
+                <div class="setting-name">Timezone</div>
+                <div class="setting-desc">Europe/Minsk (UTC+3)</div>
+              </div>
+              <button class="btn btn-ghost btn-sm">Change</button>
+            </div>
+            <div class="setting-row">
+              <div class="setting-icon">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--color-text-2)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/></svg>
+              </div>
+              <div class="setting-info">
+                <div class="setting-name">AI response language</div>
+                <div class="setting-desc">Follows interface language</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Privacy -->
+        <div class="settings-card">
+          <div class="settings-card-header">Privacy & Data</div>
+          <div class="settings-card-body">
+            <div class="setting-row">
+              <div class="setting-icon">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--color-text-2)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              </div>
+              <div class="setting-info">
+                <div class="setting-name">Anonymous analytics</div>
+                <div class="setting-desc">Help improve the app</div>
+              </div>
+              <button class="toggle on" onclick="this.classList.toggle('on')"></button>
+            </div>
+            <div class="setting-row">
+              <div class="setting-icon">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--color-text-2)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+              </div>
+              <div class="setting-info">
+                <div class="setting-name">AI training opt-out</div>
+                <div class="setting-desc">Don't use chats to train AI</div>
+              </div>
+              <button class="toggle" onclick="this.classList.toggle('on')"></button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Danger zone -->
+        <div class="settings-card danger-zone">
+          <div class="settings-card-header">Danger Zone</div>
+          <div class="settings-card-body">
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Export my data</div>
+                <div class="setting-desc">Download all your data as JSON</div>
+              </div>
+              <button class="btn btn-ghost btn-sm">Export</button>
+            </div>
+            <div class="setting-row">
+              <div class="setting-info">
+                <div class="setting-name">Delete account</div>
+                <div class="setting-desc">Permanently remove all data</div>
+              </div>
+              <button class="btn btn-danger btn-sm">Delete</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 09 — Player Profile
+     ══════════════════════════════════════════════════ -->
+<div class="screen page-screen" id="screen-profile">
+  <div id="sidebar-profile"></div>
+  <div class="page-content">
+    <div class="profile-header">
+      <div class="profile-avatar-lg">MM</div>
+      <div class="profile-meta-main">
+        <div class="profile-name">Maxim Morozov</div>
+        <div class="profile-sub">
+          <span>⚡ Forward</span>
+          <span>📅 14 years</span>
+          <span>📍 Minsk, Belarus</span>
+          <span>🏒 Dynamo Minsk Youth</span>
+          <span>🏫 DYuSSH №5</span>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+          <span class="badge badge-green">● Active</span>
+          <span class="badge badge-gray">Regional Level</span>
+          <span class="badge badge-orange">Goal: MHL by 2028</span>
+        </div>
+      </div>
+      <div class="profile-actions">
+        <button class="btn btn-ghost">Edit Profile</button>
+        <button class="btn btn-primary">Generate Report</button>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <!-- Physical stats bar -->
+      <div class="profile-stats-row">
+        <div class="profile-stat">
+          <div class="profile-stat-val">172 <span style="font-size:14px;color:var(--color-text-3)">cm</span></div>
+          <div class="profile-stat-lbl">Height</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-val">63 <span style="font-size:14px;color:var(--color-text-3)">kg</span></div>
+          <div class="profile-stat-lbl">Weight</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-val" style="color:var(--color-accent)">23%</div>
+          <div class="profile-stat-lbl">Goal Progress</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-val" style="color:var(--color-accent)">7.5</div>
+          <div class="profile-stat-lbl">Avg. Skill Rating</div>
+        </div>
+      </div>
+
+      <div class="profile-grid">
+        <!-- Skills -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Skill Ratings</div>
+            <span class="text-tiny">Last assessed Jun 2, 2026</span>
+          </div>
+          <div class="card-body">
+            <div class="skill-bar-row">
+              <div class="skill-bar-name">⛸ Skating</div>
+              <div class="skill-bar-track"><div class="skill-bar-fill" style="width:75%"></div></div>
+              <div class="skill-bar-score">7.5</div>
+            </div>
+            <div class="skill-bar-row">
+              <div class="skill-bar-name">🏒 Shooting</div>
+              <div class="skill-bar-track"><div class="skill-bar-fill" style="width:65%"></div></div>
+              <div class="skill-bar-score">6.5</div>
+            </div>
+            <div class="skill-bar-row">
+              <div class="skill-bar-name">🎯 Passing</div>
+              <div class="skill-bar-track"><div class="skill-bar-fill" style="width:70%"></div></div>
+              <div class="skill-bar-score">7.0</div>
+            </div>
+            <div class="skill-bar-row">
+              <div class="skill-bar-name">💪 Fitness</div>
+              <div class="skill-bar-track"><div class="skill-bar-fill" style="width:80%"></div></div>
+              <div class="skill-bar-score">8.0</div>
+            </div>
+            <div class="skill-bar-row">
+              <div class="skill-bar-name">🧠 Hockey Sense</div>
+              <div class="skill-bar-track"><div class="skill-bar-fill" style="width:72%"></div></div>
+              <div class="skill-bar-score">7.2</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Career Goal -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">Career Goal</div></div>
+          <div class="card-body">
+            <div style="margin-bottom:16px">
+              <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--color-text-3);margin-bottom:6px">PRIMARY GOAL</div>
+              <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;">Reach MHL</div>
+              <div style="font-size:12.5px;color:var(--color-text-2);margin-top:3px">Target: June 2028 · 24 months remaining</div>
+            </div>
+            <div class="metric-progress">
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--color-text-2);margin-bottom:6px">
+                <span>Progress</span><span style="color:var(--color-accent);font-weight:700">23%</span>
+              </div>
+              <div class="progress-bar"><div class="progress-fill" style="width:23%"></div></div>
+            </div>
+            <div style="margin-top:20px">
+              <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--color-text-3);margin-bottom:10px">SECONDARY GOALS</div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div class="badge badge-gray" style="justify-content:flex-start;padding:6px 10px">🏫 Join top-tier hockey school</div>
+                <div class="badge badge-gray" style="justify-content:flex-start;padding:6px 10px">🎓 Sports-related education</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tournaments / Activity -->
+        <div class="card">
+          <div class="card-header"><div class="card-title">Recent Activity</div></div>
+          <div class="card-body" style="padding-top:8px">
+            <div class="event-item">
+              <div class="event-dot green"></div>
+              <div>
+                <div class="event-title">Regional Championship — 3rd place</div>
+                <div class="event-meta">Best skating score in team · May 2026</div>
+              </div>
+            </div>
+            <div class="event-item">
+              <div class="event-dot green"></div>
+              <div>
+                <div class="event-title">Skills Assessment Updated</div>
+                <div class="event-meta">Skating improved +0.5 · Jun 2, 2026</div>
+              </div>
+            </div>
+            <div class="event-item">
+              <div class="event-dot orange"></div>
+              <div>
+                <div class="event-title">Summer Camp Application Pending</div>
+                <div class="event-meta">Minsk Open · deadline Jul 15</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Bio / Notes -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Notes & Bio</div>
+            <button class="btn btn-ghost btn-sm" onclick="toggleBioEdit(this)">Edit</button>
+          </div>
+          <div class="card-body">
+            <div style="font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--color-text-3);margin-bottom:8px">ABOUT THE PLAYER</div>
+            <div id="bio-display" style="font-size:13.5px;color:var(--color-text-2);line-height:1.7;">
+              Maxim has been training since age 7. Strong natural skater with excellent balance. Currently working on shooting accuracy and game-reading ability. Coach Petrov notes exceptional work ethic and coachability.
+            </div>
+            <textarea id="bio-edit" style="display:none;width:100%;min-height:96px;background:var(--color-surface-2);border:1px solid var(--color-accent);border-radius:10px;padding:10px 14px;color:var(--color-text);font-size:13.5px;line-height:1.7;resize:vertical;font-family:inherit;outline:none" placeholder="Write a short description about the player…">Maxim has been training since age 7. Strong natural skater with excellent balance. Currently working on shooting accuracy and game-reading ability. Coach Petrov notes exceptional work ethic and coachability.</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 06 — Career Roadmap
+     ══════════════════════════════════════════════════ -->
+<div class="screen page-screen" id="screen-roadmap">
+  <div id="sidebar-roadmap"></div>
+  <div class="page-content">
+    <div class="topbar">
+      <div class="topbar-title font-display">Career Roadmap</div>
+      <div class="topbar-spacer"></div>
+      <div class="player-badge"><strong>Max</strong>&nbsp;· Goal: MHL 2028</div>
+    </div>
+    <div class="content-area">
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:20px">
+        <!-- Timeline -->
+        <div>
+          <div class="roadmap-phases">
+            <button class="phase-pill active" onclick="selectPhase(this)">All Phases <span class="badge badge-green" style="font-size:10px;padding:2px 6px;margin-left:4px">5</span></button>
+            <button class="phase-pill" onclick="selectPhase(this)">Phase 1: Foundation <span class="badge badge-gray" style="font-size:10px;padding:2px 6px;margin-left:4px">3</span></button>
+            <button class="phase-pill" onclick="selectPhase(this)">Phase 2: Development <span class="badge badge-gray" style="font-size:10px;padding:2px 6px;margin-left:4px">1</span></button>
+            <button class="phase-pill" onclick="selectPhase(this)">Phase 3: Elite <span class="badge badge-gray" style="font-size:10px;padding:2px 6px;margin-left:4px">1</span></button>
+          </div>
+          <div class="roadmap-timeline">
+            <!-- Done -->
+            <div class="rm-item done" style="position:relative">
+              <div class="rm-line"></div>
+              <div class="rm-dot-wrap"><div class="rm-dot">✓</div></div>
+              <div class="rm-content">
+                <div class="rm-date">Phase 1 · Apr 2026</div>
+                <div class="rm-title">Attend 3+ Regional Tournaments</div>
+                <div class="rm-desc">Completed regional circuit in Minsk and Brest. Gained competitive experience and baseline evaluation scores.</div>
+                <div class="rm-tags"><span class="badge badge-green">✓ Completed</span><span class="badge badge-gray">3 tournaments</span></div>
+              </div>
+            </div>
+            <!-- Active -->
+            <div class="rm-item active" style="position:relative">
+              <div class="rm-line"></div>
+              <div class="rm-dot-wrap"><div class="rm-dot" style="font-size:11px">NOW</div></div>
+              <div class="rm-content">
+                <div class="rm-date">Phase 1 · Jul 2026</div>
+                <div class="rm-title">Apply for Summer Development Camp</div>
+                <div class="rm-desc">Register for Minsk Open Summer Camp. Submit application with video footage and coach reference letter by Jul 15.</div>
+                <div class="rm-tags"><span class="badge badge-orange">⏰ Deadline Jul 15</span><span class="badge badge-gray">8 spots left</span></div>
+              </div>
+            </div>
+            <!-- Future -->
+            <div class="rm-item" style="position:relative">
+              <div class="rm-line"></div>
+              <div class="rm-dot-wrap"><div class="rm-dot">3</div></div>
+              <div class="rm-content">
+                <div class="rm-date">Phase 1 · Sep 2026</div>
+                <div class="rm-title">Reach Skating Score ≥ 8.0</div>
+                <div class="rm-desc">Dedicated skating clinics twice per week. Current score 7.5 — 0.5 improvement needed over 3 months.</div>
+                <div class="rm-tags"><span class="badge badge-gray">Current: 7.5/10</span><span class="badge badge-gray">Target: 8.0</span></div>
+              </div>
+            </div>
+            <div class="rm-item" style="position:relative">
+              <div class="rm-line"></div>
+              <div class="rm-dot-wrap"><div class="rm-dot">4</div></div>
+              <div class="rm-content">
+                <div class="rm-date">Phase 2 · Nov 2026</div>
+                <div class="rm-title">Scout Report from MHL Academy</div>
+                <div class="rm-desc">Arrange evaluation session with MHL academy scout. Target academies: Dynamo Minsk, Yunost.</div>
+                <div class="rm-tags"><span class="badge badge-gray">Phase 2 start</span></div>
+              </div>
+            </div>
+            <div class="rm-item" style="position:relative">
+              <div class="rm-dot-wrap"><div class="rm-dot">5</div></div>
+              <div class="rm-content">
+                <div class="rm-date">Phase 3 · Jun 2028</div>
+                <div class="rm-title">🏆 MHL Contract Signing</div>
+                <div class="rm-desc">Ultimate goal — secure a contract with an MHL team. All preceding milestones build toward this moment.</div>
+                <div class="rm-tags"><span class="badge badge-gray">Final milestone</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Summary sidebar -->
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div class="metric-card">
+            <div class="metric-card-label">Overall Progress</div>
+            <div class="metric-card-value" style="color:var(--color-accent)">23%</div>
+            <div class="progress-bar" style="margin-top:10px"><div class="progress-fill" style="width:23%"></div></div>
+            <div class="metric-card-context" style="margin-top:6px">1 of 5 milestones done</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-card-label">Goal Probability</div>
+            <div class="metric-card-value" style="color:var(--color-orange)">65%</div>
+            <div class="metric-card-context">Medium · updated by AI today</div>
+          </div>
+          <div class="card">
+            <div class="card-header"><div class="card-title">AI Insight</div></div>
+            <div class="card-body" style="font-size:13px;color:var(--color-text-2);line-height:1.6">
+              Max is progressing on schedule. The summer camp application is the most impactful action right now — it provides direct exposure to MHL scouts.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 07 — Calendar
+     ══════════════════════════════════════════════════ -->
+<div class="screen page-screen" id="screen-calendar">
+  <div id="sidebar-calendar"></div>
+  <div class="page-content">
+    <div class="topbar">
+      <div class="topbar-title font-display">Calendar</div>
+      <div class="topbar-spacer"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-ghost btn-sm">← Prev</button>
+        <button class="btn btn-ghost btn-sm">Next →</button>
+        <button class="btn btn-primary btn-sm">+ Add Event</button>
+      </div>
+    </div>
+    <div class="content-area" style="display:grid;grid-template-columns:1fr 280px;gap:20px">
+      <div>
+        <div class="cal-header">
+          <div class="cal-month">June 2026</div>
+          <div style="display:flex;gap:6px">
+            <span class="badge badge-green">● Submitted</span>
+            <span class="badge badge-orange">● Action needed</span>
+            <span class="badge badge-gray">● Other</span>
+          </div>
+        </div>
+        <div class="cal-grid">
+          <div class="cal-day-name">Mon</div><div class="cal-day-name">Tue</div><div class="cal-day-name">Wed</div>
+          <div class="cal-day-name">Thu</div><div class="cal-day-name">Fri</div><div class="cal-day-name">Sat</div><div class="cal-day-name">Sun</div>
+          <div class="cal-cell other-month"><div class="cal-cell-num">26</div></div>
+          <div class="cal-cell other-month"><div class="cal-cell-num">27</div></div>
+          <div class="cal-cell other-month"><div class="cal-cell-num">28</div></div>
+          <div class="cal-cell other-month"><div class="cal-cell-num">29</div></div>
+          <div class="cal-cell other-month"><div class="cal-cell-num">30</div></div>
+          <div class="cal-cell other-month"><div class="cal-cell-num">31</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">1</div><div class="cal-event-dot green">App Sent</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">2</div><div class="cal-event-dot green">Skills Test</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">3</div></div>
+          <div class="cal-cell today"><div class="cal-cell-num">4</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">5</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">6</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">7</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">8</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">9</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">10</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">11</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">12</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">13</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">14</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">15</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">16</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">17</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">18</div><div class="cal-event-dot green">Qualifier</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">19</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">20</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">21</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">22</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">23</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">24</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">25</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">26</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">27</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">28</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">29</div></div>
+          <div class="cal-cell"><div class="cal-cell-num">30</div></div>
+          <div class="cal-cell other-month"><div class="cal-cell-num">1</div></div>
+          <div class="cal-cell other-month"><div class="cal-cell-num">2</div><div class="cal-event-dot orange">Camp Deadline</div></div>
+        </div>
+      </div>
+      <!-- Events sidebar -->
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="card" style="overflow:visible">
+          <div class="card-header" style="padding:14px 16px">
+            <div class="card-title">Upcoming Events</div>
+            <span class="badge badge-green" style="font-size:11px">4</span>
+          </div>
+          <div class="card-body" style="padding:8px 16px 14px;display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--color-surface-2);border-radius:10px;border:1px solid var(--color-border)">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="font-size:12.5px;font-weight:600">Minsk Open — App Sent</div>
+                <span class="badge badge-green" style="font-size:10px">Submitted</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--color-text-2)">Jun 1 · Awaiting response</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:var(--color-surface-2);border-radius:10px;border:1px solid var(--color-border)">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="font-size:12.5px;font-weight:600">Regional Qualifier</div>
+                <span class="badge badge-green" style="font-size:10px">Confirmed</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--color-text-2)">Jun 18 · Team confirmed</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:rgba(245,158,58,.07);border-radius:10px;border:1px solid rgba(245,158,58,.2)">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="font-size:12.5px;font-weight:600">Summer Camp Deadline</div>
+                <span class="badge badge-orange" style="font-size:10px">⏰ Act now</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--color-orange)">Jul 15 · Register now</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px;padding:10px;background:rgba(245,158,58,.07);border-radius:10px;border:1px solid rgba(245,158,58,.2)">
+              <div style="display:flex;align-items:center;justify-content:space-between">
+                <div style="font-size:12.5px;font-weight:600">Academy Open Day RSVP</div>
+                <span class="badge badge-orange" style="font-size:10px">Action needed</span>
+              </div>
+              <div style="font-size:11.5px;color:var(--color-text-2)">Jul 30 · RSVP required</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 08 — Opportunities
+     ══════════════════════════════════════════════════ -->
+<div class="screen page-screen" id="screen-opportunities">
+  <div id="sidebar-opportunities"></div>
+  <div class="page-content">
+    <div class="topbar">
+      <div class="topbar-title font-display">Opportunity Hub</div>
+      <div class="topbar-spacer"></div>
+      <div class="player-badge"><strong>Max</strong>&nbsp;· 14 · Forward · Belarus</div>
+    </div>
+    <div class="content-area">
+      <div class="opp-filters">
+        <button class="opp-filter-btn active" onclick="filterOpp(this)">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M7 12h10M10 18h4"/></svg>
+          All
+        </button>
+        <button class="opp-filter-btn" onclick="filterOpp(this)">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Camps
+        </button>
+        <button class="opp-filter-btn" onclick="filterOpp(this)">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Tryouts
+        </button>
+        <button class="opp-filter-btn" onclick="filterOpp(this)">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+          Tournaments
+        </button>
+        <button class="opp-filter-btn" onclick="filterOpp(this)">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Open this month
+        </button>
+      </div>
+      <div class="opp-grid">
+        <div class="opp-card">
+          <div class="opp-card-top camp"></div>
+          <div class="opp-card-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div class="opp-type camp" style="margin-bottom:0">🏕 Development Camp</div>
+              <span class="badge badge-green" style="font-size:10.5px">★ 94% match</span>
+            </div>
+            <div class="opp-title">Minsk Open Summer Camp</div>
+            <div class="opp-meta">📍 Minsk, Belarus · Jul 20–Aug 3<br>Ages 13–16 · Forward / Defenseman</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+              <span class="badge badge-gray" style="font-size:10.5px">💰 Free</span>
+              <span class="badge badge-gray" style="font-size:10.5px">8 spots left</span>
+            </div>
+            <div class="opp-footer">
+              <span class="opp-deadline urgent">⏰ Deadline Jul 15</span>
+              <button class="btn btn-primary btn-sm">Apply Now</button>
+            </div>
+          </div>
+        </div>
+        <div class="opp-card">
+          <div class="opp-card-top tryout"></div>
+          <div class="opp-card-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div class="opp-type tryout" style="margin-bottom:0">🥊 Academy Tryout</div>
+              <span class="badge badge-orange" style="font-size:10.5px">★ 87% match</span>
+            </div>
+            <div class="opp-title">Dynamo Minsk U15 Tryouts</div>
+            <div class="opp-meta">📍 Minsk Ice Palace · Aug 5<br>Ages 14–15 · All positions</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+              <span class="badge badge-gray" style="font-size:10.5px">🏒 KHL Club</span>
+              <span class="badge badge-gray" style="font-size:10.5px">Highly competitive</span>
+            </div>
+            <div class="opp-footer">
+              <span class="opp-deadline urgent">⏰ RSVP by Jul 30</span>
+              <button class="btn btn-primary btn-sm">Register</button>
+            </div>
+          </div>
+        </div>
+        <div class="opp-card">
+          <div class="opp-card-top tournament"></div>
+          <div class="opp-card-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div class="opp-type tournament" style="margin-bottom:0">🏆 Tournament</div>
+              <span class="badge badge-blue" style="font-size:10.5px">★ 76% match</span>
+            </div>
+            <div class="opp-title">Belarus Youth Cup — Fall 2026</div>
+            <div class="opp-meta">📍 Brest, Belarus · Sep 12–15<br>Regional teams U15</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+              <span class="badge badge-gray" style="font-size:10.5px">🌍 National</span>
+              <span class="badge badge-gray" style="font-size:10.5px">Team registration</span>
+            </div>
+            <div class="opp-footer">
+              <span class="opp-deadline ok">Opens Aug 1</span>
+              <button class="btn btn-ghost btn-sm">Watch</button>
+            </div>
+          </div>
+        </div>
+        <div class="opp-card">
+          <div class="opp-card-top camp"></div>
+          <div class="opp-card-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div class="opp-type camp" style="margin-bottom:0">🏕 Elite Camp</div>
+              <span class="badge badge-green" style="font-size:10.5px">★ 91% match</span>
+            </div>
+            <div class="opp-title">Yunost Minsk Academy Open Day</div>
+            <div class="opp-meta">📍 Yunost Arena · Aug 5<br>Ages 13–16 · Evaluation session</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+              <span class="badge badge-gray" style="font-size:10.5px">🏫 Top Academy</span>
+              <span class="badge badge-gray" style="font-size:10.5px">Scout present</span>
+            </div>
+            <div class="opp-footer">
+              <span class="opp-deadline urgent">⏰ RSVP by Jul 30</span>
+              <button class="btn btn-primary btn-sm">RSVP</button>
+            </div>
+          </div>
+        </div>
+        <div class="opp-card">
+          <div class="opp-card-top tryout"></div>
+          <div class="opp-card-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div class="opp-type tryout" style="margin-bottom:0">🥊 Academy Tryout</div>
+              <span class="badge badge-gray" style="font-size:10.5px">★ 62% match</span>
+            </div>
+            <div class="opp-title">Metallurg Zhlobin U16</div>
+            <div class="opp-meta">📍 Zhlobin · Sep 1<br>Ages 15–16 · Forwards + Goalies</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+              <span class="badge badge-gray" style="font-size:10.5px">Age +1 stretch</span>
+            </div>
+            <div class="opp-footer">
+              <span class="opp-deadline ok">Opens Aug 10</span>
+              <button class="btn btn-ghost btn-sm">Watch</button>
+            </div>
+          </div>
+        </div>
+        <div class="opp-card">
+          <div class="opp-card-top tournament"></div>
+          <div class="opp-card-body">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div class="opp-type tournament" style="margin-bottom:0">🏆 Tournament</div>
+              <span class="badge badge-blue" style="font-size:10.5px">★ 88% match</span>
+            </div>
+            <div class="opp-title">MHL Scouting Cup 2026</div>
+            <div class="opp-meta">📍 Moscow, Russia · Oct 3–7<br>MHL scouts attend · Top U17 teams</div>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+              <span class="badge badge-blue" style="font-size:10.5px">🎯 Goal-aligned</span>
+              <span class="badge badge-gray" style="font-size:10.5px">MHL scouts</span>
+            </div>
+            <div class="opp-footer">
+              <span class="opp-deadline ok">Nov registration</span>
+              <button class="btn btn-ghost btn-sm">Details</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 10 — Subscription
+     ══════════════════════════════════════════════════ -->
+<div class="screen page-screen" id="screen-subscription">
+  <div id="sidebar-subscription"></div>
+  <div class="page-content">
+    <div class="topbar">
+      <div class="topbar-title font-display">Subscription</div>
+    </div>
+    <div class="content-area">
+      <div class="plan-cards-row">
+        <!-- Basic -->
+        <div class="plan-card">
+          <div class="plan-name">Basic</div>
+          <div class="plan-price"><sup>$</sup>0<sub>/mo</sub></div>
+          <div class="plan-divider"></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> 1 player profile</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> Basic dashboard</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> 5 AI messages/mo</div>
+          <div class="plan-feature"><span class="plan-feature-x">✕</span> <span style="opacity:.4">Career Roadmap</span></div>
+          <div class="plan-feature"><span class="plan-feature-x">✕</span> <span style="opacity:.4">Opportunity Hub</span></div>
+          <div style="margin-top:16px">
+            <button class="btn btn-ghost" style="width:100%">Downgrade</button>
+          </div>
+        </div>
+        <!-- Pro (current) -->
+        <div class="plan-card current">
+          <div class="plan-card-badge">Current Plan</div>
+          <div class="plan-name" style="color:var(--color-accent)">Pro</div>
+          <div class="plan-price" style="color:var(--color-text)"><sup>$</sup>19<sub>/mo</sub></div>
+          <div class="plan-divider"></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> 3 player profiles</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> Full dashboard + roadmap</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> Unlimited AI messages</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> Opportunity Hub</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> Calendar & events</div>
+          <div style="margin-top:16px">
+            <button class="btn btn-primary" style="width:100%" disabled>Active</button>
+          </div>
+        </div>
+        <!-- Elite -->
+        <div class="plan-card">
+          <div class="plan-name">Elite</div>
+          <div class="plan-price"><sup>$</sup>49<sub>/mo</sub></div>
+          <div class="plan-divider"></div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> Unlimited profiles</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> Everything in Pro</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> Scout report generation</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> Priority AI support</div>
+          <div class="plan-feature"><span class="plan-feature-check">✓</span> Export PDF reports</div>
+          <div style="margin-top:16px">
+            <button class="btn btn-outline" style="width:100%" onclick="showScreen('payment')">Upgrade →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Billing details -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="billing-card">
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px">Billing Details</div>
+          <div class="billing-row">
+            <span class="billing-label">Current plan</span>
+            <span class="billing-value" style="color:var(--color-accent)">Pro — $19/mo</span>
+          </div>
+          <div class="billing-row">
+            <span class="billing-label">Next billing date</span>
+            <span class="billing-value">Jul 4, 2026</span>
+          </div>
+          <div class="billing-row">
+            <span class="billing-label">Amount due</span>
+            <span class="billing-value">$19.00</span>
+          </div>
+          <div class="billing-row">
+            <span class="billing-label">Payment method</span>
+            <span class="billing-value">•••• •••• •••• 4242</span>
+          </div>
+          <div class="billing-row">
+            <span class="billing-label">Member since</span>
+            <span class="billing-value">Jan 4, 2026</span>
+          </div>
+        </div>
+        <div class="billing-card">
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:4px">Invoice History</div>
+          <div class="billing-row">
+            <span class="billing-label">Jun 4, 2026</span>
+            <span class="billing-value">$19.00 <span class="badge badge-green" style="display:inline-flex;padding:1px 7px;font-size:11px">Paid</span></span>
+          </div>
+          <div class="billing-row">
+            <span class="billing-label">May 4, 2026</span>
+            <span class="billing-value">$19.00 <span class="badge badge-green" style="display:inline-flex;padding:1px 7px;font-size:11px">Paid</span></span>
+          </div>
+          <div class="billing-row">
+            <span class="billing-label">Apr 4, 2026</span>
+            <span class="billing-value">$19.00 <span class="badge badge-green" style="display:inline-flex;padding:1px 7px;font-size:11px">Paid</span></span>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px">
+            <button class="btn btn-ghost btn-sm">Change Card</button>
+            <button class="btn btn-danger btn-sm">Cancel Plan</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 11 — Payment Success
+     ══════════════════════════════════════════════════ -->
+<div class="screen" id="screen-payment" style="height:calc(100vh - 40px)">
+  <div class="payment-success-wrap">
+    <div class="payment-success-card">
+      <div class="payment-success-icon">✓</div>
+      <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;margin-bottom:6px">Payment Successful!</div>
+      <div style="font-size:14px;color:var(--color-text-2)">You've been upgraded to the <strong style="color:var(--color-accent)">Elite plan</strong>. All features are now unlocked.</div>
+      <div class="payment-receipt">
+        <div class="receipt-row">
+          <span class="receipt-label">Plan</span>
+          <span class="receipt-value" style="color:var(--color-accent)">Elite</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Billing cycle</span>
+          <span class="receipt-value">Monthly</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Payment method</span>
+          <span class="receipt-value">•••• 4242</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Date</span>
+          <span class="receipt-value">Jun 4, 2026</span>
+        </div>
+        <div class="receipt-row">
+          <span class="receipt-label">Next billing</span>
+          <span class="receipt-value">Jul 4, 2026</span>
+        </div>
+        <div class="receipt-row receipt-total">
+          <span class="receipt-label">Total charged</span>
+          <span class="receipt-value">$49.00</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button class="btn btn-ghost">Download Receipt</button>
+        <button class="btn btn-primary" onclick="showScreen('dashboard')">Go to Dashboard →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════
+     SCREEN 13 — Error & Empty States
+     ══════════════════════════════════════════════════ -->
+<div class="screen page-screen" id="screen-errors">
+  <div id="sidebar-errors"></div>
+  <div class="page-content">
+    <div class="topbar"><div class="topbar-title font-display">Error & Empty States</div></div>
+    <div class="content-area">
+
+      <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--color-text-3);margin-bottom:12px">Error States</div>
+      <div class="states-grid" style="margin-bottom:28px">
+        <div class="state-card">
+          <div class="state-code">404</div>
+          <div class="state-title">Page Not Found</div>
+          <div class="state-desc">The page you're looking for doesn't exist or has been moved.</div>
+          <button class="btn btn-ghost btn-sm">← Back to Dashboard</button>
+        </div>
+        <div class="state-card">
+          <div class="state-code">500</div>
+          <div class="state-title">Server Error</div>
+          <div class="state-desc">Something went wrong on our end. We've been notified and are fixing it.</div>
+          <button class="btn btn-ghost btn-sm">Try Again</button>
+        </div>
+        <div class="state-card">
+          <div class="state-icon">📡</div>
+          <div class="state-title">No Connection</div>
+          <div class="state-desc">Check your internet connection and try again. Your data is saved locally.</div>
+          <button class="btn btn-ghost btn-sm">Retry</button>
+        </div>
+        <div class="state-card">
+          <div class="state-icon">⏱</div>
+          <div class="state-title">Request Timeout</div>
+          <div class="state-desc">The AI is taking longer than expected. Your session is still active.</div>
+          <button class="btn btn-ghost btn-sm">Retry Request</button>
+        </div>
+        <div class="state-card">
+          <div class="state-icon">🔒</div>
+          <div class="state-title">Access Restricted</div>
+          <div class="state-desc">This feature requires a Pro or Elite plan to access.</div>
+          <button class="btn btn-primary btn-sm" onclick="showScreen('subscription')">Upgrade Plan</button>
+        </div>
+        <div class="state-card">
+          <div class="state-icon">⚠️</div>
+          <div class="state-title">Form Error</div>
+          <div class="state-desc">Please check the highlighted fields and correct any errors before continuing.</div>
+          <div style="width:100%;background:var(--color-surface-2);border:1px solid var(--color-danger);border-radius:8px;padding:10px 14px;font-size:12.5px;color:var(--color-danger)">⚠ Email address is invalid</div>
+        </div>
+      </div>
+
+      <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--color-text-3);margin-bottom:12px">Empty States</div>
+      <div class="states-grid" style="margin-bottom:28px">
+        <div class="empty-list">
+          <div class="empty-list-icon">📅</div>
+          <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700">No events yet</div>
+          <div style="font-size:13px;color:var(--color-text-2)">No upcoming events scheduled. Add one to start tracking your calendar.</div>
+          <button class="btn btn-primary btn-sm">+ Add Event</button>
+        </div>
+        <div class="empty-list">
+          <div class="empty-list-icon">🤖</div>
+          <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700">No chat history</div>
+          <div style="font-size:13px;color:var(--color-text-2)">Start a conversation with the AI to get personalized advice for your player.</div>
+          <button class="btn btn-primary btn-sm">Start Chat</button>
+        </div>
+        <div class="empty-list">
+          <div class="empty-list-icon">🏒</div>
+          <div style="font-family:'Syne',sans-serif;font-size:15px;font-weight:700">No opportunities found</div>
+          <div style="font-size:13px;color:var(--color-text-2)">No opportunities match your current filters. Try adjusting the criteria.</div>
+          <button class="btn btn-ghost btn-sm">Clear filters</button>
+        </div>
+      </div>
+
+      <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--color-text-3);margin-bottom:12px">Loading States (Skeleton)</div>
+      <div class="states-grid">
+        <div class="skeleton-card">
+          <div class="skeleton skeleton-line w-1\/2" style="height:16px;margin-bottom:14px"></div>
+          <div class="skeleton skeleton-line w-full"></div>
+          <div class="skeleton skeleton-line w-3\/4"></div>
+          <div class="skeleton skeleton-line w-1\/2"></div>
+        </div>
+        <div class="skeleton-card">
+          <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
+            <div class="skeleton" style="width:40px;height:40px;border-radius:50%;flex-shrink:0"></div>
+            <div style="flex:1"><div class="skeleton skeleton-line w-3\/4" style="margin-bottom:6px"></div><div class="skeleton skeleton-line w-1\/2"></div></div>
+          </div>
+          <div class="skeleton skeleton-line w-full"></div>
+          <div class="skeleton skeleton-line w-3\/4"></div>
+        </div>
+        <div class="skeleton-card">
+          <div class="skeleton" style="height:80px;border-radius:8px;margin-bottom:14px;width:100%"></div>
+          <div class="skeleton skeleton-line w-1\/2"></div>
+          <div class="skeleton skeleton-line w-1\/4"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Sidebar Template ──────────────────────────────────────── -->
+<template id="sidebarTpl">
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-text">Up<span>Way</span></div>
+    </div>
+    <nav class="sidebar-nav">
+      <!-- MAIN group -->
+      <div class="nav-group">
+        <div class="nav-group-label">Main</div>
+        <div class="nav-item" data-screen="dashboard">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Dashboard
+        </div>
+        <div class="nav-item" data-screen="chat">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+          AI Consultant
+        </div>
+      </div>
+      <!-- PLAYER group -->
+      <div class="nav-group">
+        <div class="nav-group-label">Player</div>
+        <div class="nav-item" data-screen="roadmap">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/></svg>
+          Career Roadmap
+        </div>
+        <div class="nav-item" data-screen="profile">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+          Player Profile
+        </div>
+      </div>
+      <!-- OTHER group -->
+      <div class="nav-group">
+        <div class="nav-group-label">Other</div>
+        <div class="nav-item" data-screen="calendar">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path stroke-linecap="round" stroke-linejoin="round" d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Calendar
+        </div>
+        <div class="nav-item" data-screen="opportunities">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          Opportunities
+        </div>
+        <div class="nav-item" data-screen="subscription">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          Subscription
+        </div>
+        <div class="nav-item" data-screen="settings">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><circle cx="12" cy="12" r="3"/></svg>
+          Settings
+        </div>
+      </div>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar">AM</div>
+      <div class="user-info">
+        <div class="user-name">Andrey Morozov</div>
+        <div class="user-plan">Pro Plan</div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+/* ── Screen switching ───────────────────────────────── */
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen-nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.getElementById('tab-' + name).classList.add('active');
+  highlightSidebarActive(name);
+}
+
+/* ── Inject sidebars ────────────────────────────────── */
+function injectSidebars() {
+  ['dashboard','chat','settings','profile','roadmap','calendar','opportunities','subscription','errors'].forEach(name => {
+    const slot = document.getElementById('sidebar-' + name);
+    if (!slot) return;
+    const tpl = document.getElementById('sidebarTpl');
+    const clone = tpl.content.cloneNode(true);
+    slot.replaceWith(clone);
+    // re-grab and store reference
+    document.getElementById('screen-' + name).querySelectorAll('.nav-item[data-screen]').forEach(item => {
+      item.addEventListener('click', () => showScreen(item.dataset.screen));
+    });
+  });
+}
+
+/* ── Highlight active nav item ──────────────────────── */
+function highlightSidebarActive(name) {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.screen === name);
+  });
+}
+
+/* ── Auth tab switch ────────────────────────────────── */
+function setAuthTab(btn, mode) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('signin-form').style.display   = mode === 'signin'   ? '' : 'none';
+  document.getElementById('register-form').style.display = mode === 'register' ? '' : 'none';
+}
+
+/* ── Password Recovery ──────────────────────────────── */
+let recTimer = null;
+function showRecoveryEmailSent() {
+  const email = document.getElementById('rec-email-input').value || 'your@email.com';
+  document.getElementById('rec-sent-email').textContent = email;
+  document.getElementById('rec-input').classList.remove('active');
+  document.getElementById('rec-sent').classList.add('active');
+  startResendTimer();
+}
+function startResendTimer() {
+  document.getElementById('resend-wrap').style.display = '';
+  document.getElementById('resend-btn-wrap').style.display = 'none';
+  let secs = 59;
+  document.getElementById('rec-countdown').textContent = secs;
+  clearInterval(recTimer);
+  recTimer = setInterval(() => {
+    secs--;
+    document.getElementById('rec-countdown').textContent = secs;
+    if (secs <= 0) {
+      clearInterval(recTimer);
+      document.getElementById('resend-wrap').style.display = 'none';
+      document.getElementById('resend-btn-wrap').style.display = '';
+    }
+  }, 1000);
+}
+
+/* ── Onboarding ─────────────────────────────────────── */
+let obCurrentStep = 1;
+const OB_TOTAL = 5;
+const obTitles = ['Player Information','Geography','Current Level','Goals','Skills Assessment'];
+const obSubs   = [
+  'Tell us about the player you\'re supporting.',
+  'Where is the player based?',
+  'What is the player\'s current competition level?',
+  'What does the player want to achieve? Select all that apply.',
+  'Rate each skill on a scale of 1–10 for an accurate baseline.'
+];
+
+function obStep(dir) {
+  const next = obCurrentStep + dir;
+  if (next < 1 || next > OB_TOTAL) {
+    if (next > OB_TOTAL) showObComplete();
+    return;
+  }
+  document.getElementById('ob-panel-' + obCurrentStep).classList.remove('active');
+  obCurrentStep = next;
+  document.getElementById('ob-panel-' + obCurrentStep).classList.add('active');
+  updateObUI();
+}
+
+function updateObUI() {
+  const s = obCurrentStep;
+  document.getElementById('ob-title').textContent = obTitles[s - 1];
+  document.getElementById('ob-sub').textContent   = obSubs[s - 1];
+  document.getElementById('ob-step-counter').textContent = `Step ${s} of ${OB_TOTAL}`;
+  document.getElementById('ob-progress').style.width = (s / OB_TOTAL * 100) + '%';
+  document.getElementById('ob-back-btn').style.display = s > 1 ? '' : 'none';
+  document.getElementById('ob-next-btn').textContent = s === OB_TOTAL ? 'Finish →' : 'Next Step →';
+  // Step indicators
+  document.querySelectorAll('.ob-step-item').forEach(item => {
+    const n = parseInt(item.dataset.step);
+    item.classList.toggle('active', n === s);
+    item.classList.toggle('done', n < s);
+    const dot = item.querySelector('.ob-step-dot');
+    dot.textContent = n < s ? '✓' : n;
+  });
+}
+
+function showObComplete() {
+  document.getElementById('ob-footer').style.display = 'none';
+  document.getElementById('ob-title-wrap').style.display = 'none';
+  document.getElementById('onboarding-body') && (document.querySelector('.onboarding-body').style.display = 'none');
+  document.querySelector('.onboarding-body').style.display = 'none';
+  document.getElementById('ob-complete').style.display = 'flex';
+  setTimeout(() => {
+    document.getElementById('ob-spinner').style.display = 'none';
+    const c = document.getElementById('ob-complete-content');
+    c.style.display = 'flex';
+  }, 2200);
+}
+
+function selectPill(btn, group) {
+  btn.closest('.ob-pill-group').querySelectorAll('.ob-pill').forEach(p => p.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+function selectCountry(btn, code) {
+  selectPill(btn, 'country');
+  document.getElementById('geo-fields').classList.add('visible');
+}
+function toggleGoal(card) {
+  card.classList.toggle('selected');
+  if (card === document.getElementById('ob-custom-goal-card')) {
+    const ci = document.getElementById('ob-custom-input');
+    ci.style.display = card.classList.contains('selected') ? '' : 'none';
+  }
+}
+function updateSkill(id, val) {
+  document.getElementById('val-' + id).textContent = val;
+  document.getElementById('fill-' + id).style.width = (val / 10 * 100) + '%';
+}
+
+/* ── Language toggle ────────────────────────────────── */
+function setLang(btn, code) {
+  document.querySelectorAll('#langToggle .lang-opt').forEach(o => o.classList.remove('active'));
+  btn.classList.add('active');
+  document.documentElement.lang = code;
+}
+
+/* ── Chat: send message ─────────────────────────────── */
+function sendMsg() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  const msgs = document.getElementById('chatMessages');
+
+  const now = new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'});
+  const div = document.createElement('div');
+  div.className = 'msg msg-parent';
+  div.innerHTML = `
+    <div class="msg-avatar msg-avatar-parent">AM</div>
+    <div class="msg-content">
+      <div class="msg-bubble">${text.replace(/</g,'&lt;')}</div>
+      <div class="msg-time">${now}</div>
+    </div>`;
+  msgs.appendChild(div);
+
+  input.value = '';
+  input.style.height = 'auto';
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Simulated AI typing reply
+  setTimeout(() => {
+    const aiDiv = document.createElement('div');
+    aiDiv.className = 'msg msg-ai';
+    aiDiv.innerHTML = `
+      <div class="msg-avatar msg-avatar-ai">🤖</div>
+      <div class="msg-content">
+        <div class="msg-bubble" style="color:var(--color-text-3);font-style:italic">Thinking…</div>
+        <div class="msg-time">${now}</div>
+      </div>`;
+    msgs.appendChild(aiDiv);
+    msgs.scrollTop = msgs.scrollHeight;
+
+    setTimeout(() => {
+      aiDiv.querySelector('.msg-bubble').innerHTML = `Got it! I'll work on that. Based on Max's current profile, here's what I recommend for next steps in your query about <strong>${text.replace(/</g,'&lt;').substring(0,40)}…</strong>`;
+      aiDiv.querySelector('.msg-bubble').style = '';
+      msgs.scrollTop = msgs.scrollHeight;
+    }, 1200);
+  }, 600);
+}
+
+function insertChip(btn) {
+  document.getElementById('chatInput').value = btn.textContent;
+  document.getElementById('chatInput').focus();
+}
+
+/* ── Bio edit toggle ────────────────────────────────── */
+function toggleBioEdit(btn) {
+  const display = document.getElementById('bio-display');
+  const edit    = document.getElementById('bio-edit');
+  const editing = edit.style.display !== 'none';
+  if (editing) {
+    display.textContent = edit.value;
+    display.style.display = '';
+    edit.style.display = 'none';
+    btn.textContent = 'Edit';
+  } else {
+    display.style.display = 'none';
+    edit.style.display = '';
+    edit.focus();
+    btn.textContent = 'Save';
+  }
+}
+
+/* ── Phase pill select ──────────────────────────────── */
+function selectPhase(btn) {
+  btn.closest('.roadmap-phases').querySelectorAll('.phase-pill').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* ── Opportunity filter ─────────────────────────────── */
+function filterOpp(btn) {
+  btn.closest('.opp-filters').querySelectorAll('.opp-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* ── Init ───────────────────────────────────────────── */
+injectSidebars();
+highlightSidebarActive('dashboard');
+</script>
+</body>
+</html>

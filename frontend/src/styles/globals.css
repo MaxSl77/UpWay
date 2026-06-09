@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design Tokens (CSS variables для shadcn/ui совместимости) ── */
+:root {
+  --background:    210 14% 7%;     /* #0d0f14 */
+  --foreground:    226 35% 95%;    /* #f0f2f8 */
+  --muted:         230 16% 29%;    /* #3d4260 */
+  --muted-foreground: 230 12% 60%; /* #8b91a8 */
+  --border:        228 21% 21%;    /* #2a2e40 */
+  --input:         228 21% 21%;
+  --primary:       149 68% 52%;    /* #22d67a */
+  --primary-foreground: 149 68% 8%; /* #0a1a11 */
+  --secondary:     228 22% 18%;    /* #242840 */
+  --secondary-foreground: 226 35% 95%;
+  --destructive:   0 84% 60%;      /* #ef4444 */
+  --destructive-foreground: 0 0% 100%;
+  --ring:          149 68% 52%;
+  --radius:        0.625rem;       /* 10px = btn-radius */
+
+  /* Upway-specific tokens */
+  --color-bg:            #0d0f14;
+  --color-surface:       #141720;
+  --color-surface-2:     #1c2030;
+  --color-surface-3:     #242840;
+  --color-border:        #2a2e40;
+  --color-accent:        #22d67a;
+  --color-accent-dim:    rgba(34,214,122,.15);
+  --color-accent-glow:   rgba(34,214,122,.35);
+  --color-orange:        #f59e3a;
+  --color-orange-dim:    rgba(245,158,58,.15);
+  --color-text:          #f0f2f8;
+  --color-text-2:        #8b91a8;
+  --color-text-3:        #555c78;
+  --color-danger:        #ef4444;
+  --color-danger-dim:    rgba(239,68,68,.10);
+  --color-bubble-parent: #1a3d29;
+  --color-bubble-ai:     #1c2030;
+  --sidebar-width:       220px;
+  --header-height:       60px;
+}
+
+/* ── Light theme ── */
+html.light {
+  --background:       0 0% 97%;
+  --foreground:       228 25% 15%;
+  --muted:            228 20% 88%;
+  --muted-foreground: 228 15% 48%;
+  --border:           228 20% 85%;
+  --input:            228 20% 85%;
+  --primary:          149 68% 40%;
+  --primary-foreground: 0 0% 100%;
+  --secondary:        228 22% 93%;
+  --secondary-foreground: 228 25% 15%;
+  --destructive:      0 84% 55%;
+  --destructive-foreground: 0 0% 100%;
+  --ring:             149 68% 40%;
+
+  --color-bg:            #f5f7fa;
+  --color-surface:       #ffffff;
+  --color-surface-2:     #f0f3f9;
+  --color-surface-3:     #e4e8f2;
+  --color-border:        #d0d6e8;
+  --color-accent:        #16a85c;
+  --color-accent-dim:    rgba(22,168,92,.12);
+  --color-accent-glow:   rgba(22,168,92,.25);
+  --color-orange:        #d97706;
+  --color-orange-dim:    rgba(217,119,6,.12);
+  --color-text:          #1a1f36;
+  --color-text-2:        #5a6a99;
+  --color-text-3:        #9aa2c4;
+  --color-danger:        #dc2626;
+  --color-danger-dim:    rgba(220,38,38,.10);
+  --color-bubble-parent: #d4f0e2;
+  --color-bubble-ai:     #f0f3f9;
+}
+
+/* ── Base ── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { height: 100%; }
+
+/* ── Custom scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-3);
+  border-radius: 3px;
+}
+
+/* ── Scrollbar utility ── */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-3) transparent;
+}
