@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
+import { useSettingsStore } from '@/store/settingsStore'
 import { authApi } from '../api'
 import api from '@/lib/api'
 
@@ -8,11 +9,23 @@ export function LoginForm() {
   const navigate = useNavigate()
   const setTokens = useAuthStore((s) => s.setTokens)
   const setUser   = useAuthStore((s) => s.setUser)
+  const { language } = useSettingsStore()
 
   const [email,    setEmail]    = useState('')
   const [password, setPassword] = useState('')
   const [loading,  setLoading]  = useState(false)
   const [error,    setError]    = useState<string | null>(null)
+
+  const t = {
+    title:       language === 'ru' ? 'Добро пожаловать'          : 'Welcome back',
+    subtitle:    language === 'ru' ? 'Войдите, чтобы продолжить.' : 'Sign in to continue.',
+    emailLabel:  'Email',
+    passLabel:   language === 'ru' ? 'Пароль'                    : 'Password',
+    forgot:      language === 'ru' ? 'Забыли пароль?'             : 'Forgot password?',
+    submit:      language === 'ru' ? 'Войти'                      : 'Sign In',
+    loading:     language === 'ru' ? 'Входим…'                    : 'Signing in…',
+    errorMsg:    language === 'ru' ? 'Неверный email или пароль.' : 'Invalid email or password.',
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,7 +36,6 @@ export function LoginForm() {
       setTokens(accessToken, refreshToken)
       setUser(user)
 
-      // Check if player profile already exists → dashboard, else onboarding
       try {
         await api.get('/players/me')
         navigate('/dashboard', { replace: true })
@@ -31,7 +43,7 @@ export function LoginForm() {
         navigate('/onboarding', { replace: true })
       }
     } catch {
-      setError('Неверный email или пароль.')
+      setError(t.errorMsg)
     } finally {
       setLoading(false)
     }
@@ -39,13 +51,13 @@ export function LoginForm() {
 
   return (
     <form onSubmit={handleSubmit}>
-      <h2 className="font-display text-[22px] font-bold mb-1">Добро пожаловать</h2>
-      <p className="text-[13px] text-text-2 mb-6">Войдите, чтобы продолжить.</p>
+      <h2 className="font-display text-[22px] font-bold mb-1">{t.title}</h2>
+      <p className="text-[13px] text-text-2 mb-6">{t.subtitle}</p>
 
       {error && <p className="text-danger text-sm mb-4">{error}</p>}
 
       <div className="mb-4">
-        <label className="block text-[12.5px] font-medium text-text-2 mb-1.5">Email</label>
+        <label className="block text-[12.5px] font-medium text-text-2 mb-1.5">{t.emailLabel}</label>
         <input
           type="email" value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -56,8 +68,8 @@ export function LoginForm() {
 
       <div className="mb-4">
         <div className="flex justify-between items-center mb-1.5">
-          <label className="text-[12.5px] font-medium text-text-2">Пароль</label>
-          <Link to="/recovery" className="text-[12px] text-accent">Забыли пароль?</Link>
+          <label className="text-[12.5px] font-medium text-text-2">{t.passLabel}</label>
+          <Link to="/recovery" className="text-[12px] text-accent">{t.forgot}</Link>
         </div>
         <input
           type="password" value={password}
@@ -71,7 +83,7 @@ export function LoginForm() {
         type="submit" disabled={loading}
         className="w-full h-[44px] bg-accent text-[#0a1a11] rounded-btn font-bold text-[15px] mt-2 hover:bg-[#30e887] hover:shadow-accent transition-all disabled:opacity-60"
       >
-        {loading ? 'Входим…' : 'Войти'}
+        {loading ? t.loading : t.submit}
       </button>
     </form>
   )

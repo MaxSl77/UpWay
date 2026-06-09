@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useSettingsStore } from '@/store/settingsStore'
 import { StepPlayerInfo } from './StepPlayerInfo'
 import { StepGeography } from './StepGeography'
 import { StepLevel } from './StepLevel'
@@ -9,21 +10,42 @@ import { OnboardingComplete } from './OnboardingComplete'
 import type { Player } from '@/types'
 import api from '@/lib/api'
 
-const STEPS = [
-  { num: 1, title: 'Player Information', sub: 'Tell us about the player you\'re supporting.' },
-  { num: 2, title: 'Geography',          sub: 'Where is the player based?' },
-  { num: 3, title: 'Current Level',      sub: 'What level is the player at?' },
-  { num: 4, title: 'Goals',              sub: 'What are the player\'s ambitions?' },
-  { num: 5, title: 'Skills Assessment',  sub: 'Rate each skill honestly.' },
-]
-
 type FormData = Partial<Omit<Player, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 
 export function OnboardingWizard() {
   const navigate = useNavigate()
-  const [step, setStep]         = useState(1)
-  const [data, setData]         = useState<FormData>({})
+  const { language } = useSettingsStore()
+  const [step, setStep]             = useState(1)
+  const [data, setData]             = useState<FormData>({})
   const [completing, setCompleting] = useState(false)
+
+  const STEPS = [
+    {
+      num: 1,
+      title: language === 'ru' ? 'Информация об игроке' : 'Player Information',
+      sub:   language === 'ru' ? 'Расскажите об игроке, которого вы поддерживаете.' : 'Tell us about the player you\'re supporting.',
+    },
+    {
+      num: 2,
+      title: language === 'ru' ? 'География'     : 'Geography',
+      sub:   language === 'ru' ? 'Где живёт игрок?' : 'Where is the player based?',
+    },
+    {
+      num: 3,
+      title: language === 'ru' ? 'Текущий уровень' : 'Current Level',
+      sub:   language === 'ru' ? 'На каком уровне находится игрок?' : 'What level is the player at?',
+    },
+    {
+      num: 4,
+      title: language === 'ru' ? 'Цели'         : 'Goals',
+      sub:   language === 'ru' ? 'К чему стремится игрок?' : 'What are the player\'s ambitions?',
+    },
+    {
+      num: 5,
+      title: language === 'ru' ? 'Оценка навыков' : 'Skills Assessment',
+      sub:   language === 'ru' ? 'Честно оцените каждый навык.' : 'Rate each skill honestly.',
+    },
+  ]
 
   const progress = (step / STEPS.length) * 100
   const current  = STEPS[step - 1]
@@ -40,13 +62,18 @@ export function OnboardingWizard() {
     setCompleting(true)
     try {
       await api.post('/players/', data)
-      // Wizard auto-completes after a short delay
       setTimeout(() => navigate('/dashboard'), 2500)
     } catch (e) {
       console.error(e)
       setCompleting(false)
     }
   }
+
+  const stepLabel  = language === 'ru' ? 'Шаг'  : 'Step'
+  const ofLabel    = language === 'ru' ? 'из'   : 'of'
+  const backLabel  = language === 'ru' ? '← Назад'       : '← Back'
+  const nextLabel  = language === 'ru' ? 'Далее →'        : 'Next Step →'
+  const finishLabel = language === 'ru' ? 'Завершить →'   : 'Finish →'
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -70,7 +97,9 @@ export function OnboardingWizard() {
                 {step > s.num ? '✓' : s.num}
               </div>
               <div className="mt-0.5">
-                <p className="text-[10.5px] text-text-3 font-semibold uppercase tracking-wide">Step {s.num}</p>
+                <p className="text-[10.5px] text-text-3 font-semibold uppercase tracking-wide">
+                  {stepLabel} {s.num}
+                </p>
                 <p className={`text-[13.5px] mt-0.5 font-medium ${step === s.num ? 'text-text font-semibold' : step > s.num ? 'text-text-3' : 'text-text-2'}`}>
                   {s.title}
                 </p>
@@ -111,15 +140,15 @@ export function OnboardingWizard() {
                   onClick={back}
                   className="h-11 px-5 bg-surface2 border border-border rounded-btn text-sm hover:border-accent hover:text-accent transition-colors"
                 >
-                  ← Back
+                  {backLabel}
                 </button>
               ) : <div />}
-              <p className="text-xs text-text-3">Step {step} of {STEPS.length}</p>
+              <p className="text-xs text-text-3">{stepLabel} {step} {ofLabel} {STEPS.length}</p>
               <button
                 onClick={next}
                 className="h-11 min-w-[140px] px-5 bg-accent text-[#0a1a11] rounded-btn font-semibold text-sm hover:bg-[#30e887] hover:shadow-accent transition-all"
               >
-                {step === STEPS.length ? 'Finish →' : 'Next Step →'}
+                {step === STEPS.length ? finishLabel : nextLabel}
               </button>
             </footer>
           </>

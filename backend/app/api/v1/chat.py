@@ -106,6 +106,19 @@ async def stream_message(
     db: DB,
 ):
     """SSE endpoint for streaming AI responses token-by-token."""
+    # Ownership check — same guard used by the non-streaming send_message endpoint.
+    # Without this, any authenticated user who knows a session UUID can read
+    # another user's chat history (it's loaded into the GPT context) and
+    # consume their message quota.
+    session_check = await db.execute(
+        select(ChatSession).where(
+            ChatSession.id == session_id,
+            ChatSession.user_id == current_user.id,   # ← ownership gate
+        )
+    )
+    if not session_check.scalar_one_or_none():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found")
+
     service = ChatService(db=db, user=current_user)
 
     async def event_generator():

@@ -20,6 +20,10 @@ class RefreshRequest(Schema):
     refresh_token: str  # camelCase: refreshToken
 
 
+class LogoutRequest(Schema):
+    refresh_token: str  # camelCase: refreshToken
+
+
 class PasswordResetRequest(Schema):
     email: EmailStr
 
@@ -29,13 +33,18 @@ class PasswordResetConfirm(Schema):
     new_password: str = Field(min_length=8)  # camelCase: newPassword
 
 
+class EmailVerifyRequest(Schema):
+    token: str
+
+
 class UserOut(Schema):
     id: UUID
     email: str
-    full_name: str          # camelCase: fullName
+    full_name: str           # camelCase: fullName
     plan: str
-    avatar_url: str | None  # camelCase: avatarUrl
-    created_at: datetime    # camelCase: createdAt
+    is_email_verified: bool  # camelCase: isEmailVerified
+    avatar_url: str | None   # camelCase: avatarUrl
+    created_at: datetime     # camelCase: createdAt
 
 
 class TokenResponse(Schema):

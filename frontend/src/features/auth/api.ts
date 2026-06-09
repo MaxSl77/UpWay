@@ -22,6 +22,15 @@ export const authApi = {
     return data
   },
 
+  logout: async (refreshToken: string): Promise<void> => {
+    // Revoke refresh token server-side; ignore errors (token may already be expired)
+    await api.post('/auth/logout', { refreshToken }).catch(() => {})
+  },
+
+  verifyEmail: async (token: string): Promise<void> => {
+    await api.post('/auth/verify-email', { token })
+  },
+
   requestPasswordReset: async (email: string): Promise<void> => {
     await api.post('/auth/password-reset/request', { email })
   },

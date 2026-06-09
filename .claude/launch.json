@@ -3,10 +3,11 @@
   "configurations": [
     {
       "name": "upway",
-      "runtimeExecutable": "python",
-      "runtimeArgs": ["-m", "http.server", "3000"],
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "frontend",
       "port": 3000,
-      "url": "http://localhost:3000/"
+      "autoPort": false
     }
   ]
 }

@@ -6,6 +6,7 @@ export interface User {
   fullName: string
   avatarUrl?: string
   plan: 'free' | 'starter' | 'pro'
+  isEmailVerified: boolean
   createdAt: string
 }
 

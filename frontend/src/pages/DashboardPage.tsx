@@ -6,25 +6,51 @@ import { UpcomingEventsCard } from '@/features/dashboard/components/UpcomingEven
 import { useDashboard } from '@/features/dashboard/hooks/useDashboard'
 import { FullPageSpinner } from '@/components/shared/FullPageSpinner'
 import { useAuthStore } from '@/store/authStore'
+import { useSettingsStore } from '@/store/settingsStore'
 import { format } from 'date-fns'
-import { ru } from 'date-fns/locale'
+import { ru, enUS } from 'date-fns/locale'
 
 export default function DashboardPage() {
   const { player, metrics, nextStep, roadmapItems, events, isLoading } = useDashboard()
   const user = useAuthStore((s) => s.user)
+  const { language } = useSettingsStore()
 
   if (isLoading) return <FullPageSpinner />
 
-  // Greeting uses the parent's name (user account), not the player name
-  const firstName = user?.fullName?.split(' ')[0] ?? 'родитель'
+  const firstName = user?.fullName?.split(' ')[0] ?? (language === 'ru' ? 'родитель' : 'friend')
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Доброе утро' : hour < 18 ? 'Добрый день' : 'Добрый вечер'
+
+  const greeting = language === 'ru'
+    ? hour < 12 ? 'Доброе утро' : hour < 18 ? 'Добрый день' : 'Добрый вечер'
+    : hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+
+  const dateStr = language === 'ru'
+    ? format(new Date(), 'EEEE, d MMMM yyyy', { locale: ru })
+    : format(new Date(), 'EEEE, MMMM d, yyyy', { locale: enUS })
+
+  const t = {
+    goalProgress: language === 'ru' ? 'Прогресс к цели'      : 'Goal Progress',
+    goalCtx: (label: string, months: number) =>
+      language === 'ru'
+        ? `Цель: ${label} · ещё ${months} мес. · на основе самооценки`
+        : `Goal: ${label} · ${months} mo. left · based on self-assessment`,
+    skating:    language === 'ru' ? 'Катание'                 : 'Skating',
+    skatingCtx: (delta: number) =>
+      language === 'ru'
+        ? `Самооценка навыка · ${delta > 0 ? `+${delta}` : delta} за месяц`
+        : `Self-assessed skill · ${delta > 0 ? `+${delta}` : delta} this month`,
+    growth:     language === 'ru' ? '↑ В росте'              : '↑ Improving',
+    goalProb:   language === 'ru' ? 'Вероятность цели'        : 'Goal Probability',
+    probCtx:    language === 'ru' ? 'На основе вашей самооценки навыков' : 'Based on your self-assessed skills',
+    updated:    (date: string) =>
+      language === 'ru' ? `Обновлено ${date}` : `Updated ${date}`,
+  }
 
   return (
     <>
       <TopBar
         title={`${greeting}, ${firstName} 👋`}
-        subtitle={format(new Date(), 'EEEE, d MMMM yyyy', { locale: ru })}
+        subtitle={dateStr}
       />
 
       <div className="flex-1 overflow-y-auto px-7 py-6 pb-16 scrollbar-thin">
@@ -34,27 +60,27 @@ export default function DashboardPage() {
           {/* Metrics row */}
           <div className="grid grid-cols-3 gap-4">
             <MetricCard
-              label="Прогресс к цели"
+              label={t.goalProgress}
               value={`${metrics?.goalProgressPct ?? 0}%`}
-              context={`Цель: ${metrics?.goalLabel ?? '—'} · ещё ${metrics?.monthsRemaining ?? '—'} мес. · на основе самооценки`}
+              context={t.goalCtx(metrics?.goalLabel ?? '—', metrics?.monthsRemaining ?? 0)}
               progress={metrics?.goalProgressPct}
               accent
             />
             <MetricCard
-              label="Катание"
+              label={t.skating}
               value={`${metrics?.skatingScore ?? 0}`}
               suffix="/10"
-              context={`Самооценка навыка · ${metrics?.skatingDelta && metrics.skatingDelta > 0 ? `+${metrics.skatingDelta}` : metrics?.skatingDelta ?? 0} за месяц`}
+              context={t.skatingCtx(metrics?.skatingDelta ?? 0)}
               badges={[
-                { label: '↑ В росте', variant: 'green' },
+                { label: t.growth, variant: 'green' },
                 { label: player?.level ?? '—', variant: 'gray' },
               ]}
             />
             <MetricCard
-              label="Вероятность цели"
+              label={t.goalProb}
               value={`${metrics?.goalProbabilityPct ?? 0}%`}
-              context="На основе вашей самооценки навыков"
-              badges={[{ label: `Обновлено ${metrics?.probabilityUpdatedAt ?? '—'}`, variant: 'orange' }]}
+              context={t.probCtx}
+              badges={[{ label: t.updated(metrics?.probabilityUpdatedAt ?? '—'), variant: 'orange' }]}
               orange
             />
           </div>

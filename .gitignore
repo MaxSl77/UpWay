@@ -35,3 +35,9 @@ alembic/versions/*.py
 
 # Certs
 nginx/certs/
+
+# Documents / RAG source files (binary, may be confidential)
+*.pdf
+
+# Celery beat schedule (runtime binary)
+backend/celerybeat-schedule
