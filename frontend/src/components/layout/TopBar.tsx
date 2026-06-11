@@ -1,12 +1,14 @@
+import { type ReactNode } from 'react'
 import { Zap } from 'lucide-react'
 import { usePlayerStore } from '@/store/playerStore'
 
 interface TopBarProps {
   title: string
   subtitle?: string
+  action?: ReactNode
 }
 
-export function TopBar({ title, subtitle }: TopBarProps) {
+export function TopBar({ title, subtitle, action }: TopBarProps) {
   const { player } = usePlayerStore()
 
   return (
@@ -17,6 +19,8 @@ export function TopBar({ title, subtitle }: TopBarProps) {
       </div>
 
       <div className="flex-1" />
+
+      {action && <div className="flex-shrink-0">{action}</div>}
 
       {player && (
         <div className="flex items-center gap-2 bg-surface2 border border-border rounded-lg px-3 py-1 text-[12.5px] text-text-2">

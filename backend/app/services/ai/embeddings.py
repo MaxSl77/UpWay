@@ -1,20 +1,33 @@
-from openai import AsyncOpenAI
-from app.core.config import settings
+"""
+Local embeddings via fastembed (no API key required).
+Model: sentence-transformers/paraphrase-multilingual-mpnet-base-v2
+  — 768 dims, excellent Russian/multilingual support.
+First call downloads ~420 MB model to ~/.cache/fastembed/.
+"""
+import asyncio
+from functools import lru_cache
+from typing import List
 
-_client: AsyncOpenAI | None = None
+from fastembed import TextEmbedding
 
 
-def _get_client() -> AsyncOpenAI:
-    global _client
-    if _client is None:
-        _client = AsyncOpenAI(api_key=settings.OPENAI_API_KEY)
-    return _client
+@lru_cache(maxsize=1)
+def _get_model() -> TextEmbedding:
+    from app.core.config import settings
+    return TextEmbedding(model_name=settings.EMBEDDING_MODEL)
 
 
-async def get_embedding(text: str) -> list[float]:
-    """Return a 1536-dim embedding vector for the given text."""
-    response = await _get_client().embeddings.create(
-        model=settings.EMBEDDING_MODEL,
-        input=text,
-    )
-    return response.data[0].embedding
+async def get_embedding(text: str) -> List[float]:
+    """Return a 768-dim embedding vector. Runs CPU model in thread pool."""
+    loop = asyncio.get_event_loop()
+    model = _get_model()
+
+    def _embed() -> List[float]:
+        result = list(model.embed([text]))
+        return result[0].tolist()
+
+    return await loop.run_in_executor(None, _embed)
+
+
+# For this model, query and passage embeddings are identical
+get_query_embedding = get_embedding

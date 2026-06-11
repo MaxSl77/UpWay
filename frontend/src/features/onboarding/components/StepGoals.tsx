@@ -1,7 +1,7 @@
 import type { Player } from '@/types'
 
 type FormData = Partial<Omit<Player, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
-interface Props { data: FormData; onChange: (d: FormData) => void }
+interface Props { data: FormData; onChange: (d: FormData) => void; errors?: Record<string, string> }
 
 const goalOptions = [
   { value: 'МХЛ',           icon: '🏒', desc: 'Молодёжная хоккейная лига' },
@@ -14,7 +14,7 @@ const goalOptions = [
   { value: 'Просмотр',      icon: '👁️', desc: 'Пройти скаутский просмотр' },
 ]
 
-export function StepGoals({ data, onChange }: Props) {
+export function StepGoals({ data, onChange, errors = {} }: Props) {
   const selected: string[] = data.goals ?? []
 
   const toggle = (val: string) => {
@@ -27,6 +27,7 @@ export function StepGoals({ data, onChange }: Props) {
   return (
     <div>
       <p className="text-[13px] text-text-2 mb-4">Выберите одну или несколько целей — AI будет учитывать их при составлении плана.</p>
+      {errors.goals && <p className="text-danger text-[12.5px] font-medium mb-3">{errors.goals}</p>}
       <div className="grid grid-cols-2 gap-3">
         {goalOptions.map((g) => {
           const active = selected.includes(g.value)

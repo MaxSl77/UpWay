@@ -1,13 +1,19 @@
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
 import { useState } from 'react'
+import { Navigate } from 'react-router-dom'
+import { useAuthStore } from '@/store/authStore'
 import { useSettingsStore } from '@/store/settingsStore'
 
 type Tab = 'signin' | 'register'
 
 export default function LoginPage() {
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const [tab, setTab] = useState<Tab>('signin')
   const { language, setLanguage } = useSettingsStore()
+
+  // Already logged in — send to dashboard instead of showing login form
+  if (isAuthenticated) return <Navigate to="/dashboard" replace />
 
   const t = {
     tagline:  language === 'ru' ? 'AI-помощник для хоккейных семей'  : 'AI Assistant for Hockey Parents',

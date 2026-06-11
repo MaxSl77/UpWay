@@ -32,5 +32,5 @@ export function useRoadmap() {
   const phases = [...new Set(allItems.map((i) => i.phase))]
   const items = activePhase ? allItems.filter((i) => i.phase === activePhase) : allItems
 
-  return { phases, allItems, items, activePhase, setActivePhase, isLoading, updateStatus }
+  return { phases, allItems, items, activePhase, setActivePhase, isLoading, updateStatus, refetch: fetchRoadmap }
 }

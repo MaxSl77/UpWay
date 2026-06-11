@@ -31,6 +31,10 @@ export const authApi = {
     await api.post('/auth/verify-email', { token })
   },
 
+  resendVerification: async (): Promise<void> => {
+    await api.post('/auth/resend-verification')
+  },
+
   requestPasswordReset: async (email: string): Promise<void> => {
     await api.post('/auth/password-reset/request', { email })
   },
@@ -47,5 +51,9 @@ export const authApi = {
   me: async (): Promise<User> => {
     const { data } = await api.get<User>('/auth/me')
     return data
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string): Promise<void> => {
+    await api.post('/auth/change-password', { currentPassword, newPassword })
   },
 }

@@ -2,7 +2,7 @@ from fastapi import HTTPException, Query, status
 from app.core.camel_router import CamelRouter
 from sqlalchemy import select, extract
 
-from app.api.deps import CurrentUser, DB
+from app.api.deps import CurrentUser, DB, CheckCalendarLimit
 from app.models.calendar import CalendarEvent
 from app.models.player import Player
 from app.schemas.calendar import CalendarEventOut, CalendarEventCreate
@@ -58,7 +58,8 @@ async def get_upcoming(
     return result.scalars().all()
 
 
-@router.post("/", response_model=CalendarEventOut, status_code=201)
+@router.post("/", response_model=CalendarEventOut, status_code=201,
+             dependencies=[CheckCalendarLimit])
 async def create_event(payload: CalendarEventCreate, current_user: CurrentUser, db: DB):
     result = await db.execute(select(Player).where(Player.user_id == current_user.id))
     player = result.scalar_one_or_none()
@@ -68,3 +69,25 @@ async def create_event(payload: CalendarEventCreate, current_user: CurrentUser, 
     db.add(event)
     await db.flush()
     return event
+
+
+@router.delete("/{event_id}", status_code=204)
+async def delete_event(event_id: str, current_user: CurrentUser, db: DB):
+    from uuid import UUID as PyUUID
+    player = await db.execute(select(Player).where(Player.user_id == current_user.id))
+    player = player.scalar_one_or_none()
+    if not player:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Player profile not found")
+
+    result = await db.execute(
+        select(CalendarEvent).where(
+            CalendarEvent.id == PyUUID(event_id),
+            CalendarEvent.player_id == player.id,
+        )
+    )
+    event = result.scalar_one_or_none()
+    if not event:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Event not found")
+
+    await db.delete(event)
+    await db.flush()

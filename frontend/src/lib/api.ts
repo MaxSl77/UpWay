@@ -31,6 +31,12 @@ api.interceptors.response.use(
     const original = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
     if (error.response?.status === 401 && !original._retry) {
+      // Auth endpoints return 401 as a legitimate failure — don't attempt token refresh
+      const url = original.url ?? ''
+      if (url.includes('/auth/')) {
+        return Promise.reject(error)
+      }
+
       original._retry = true
 
       if (!isRefreshing) {

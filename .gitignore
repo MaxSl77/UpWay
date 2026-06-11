@@ -16,6 +16,7 @@ dist/
 node_modules/
 frontend/dist/
 frontend/.vite/
+frontend/package-lock.json
 
 # IDE
 .vscode/
@@ -38,7 +39,12 @@ nginx/certs/
 
 # Documents / RAG source files and internal docs
 *.pdf
+*.docx
 AUDIT.md
+
+# RAG generated JSON and unpacked archives
+data/*.json
+upway_unpacked/
 
 # Celery beat schedule (runtime binary)
 backend/celerybeat-schedule

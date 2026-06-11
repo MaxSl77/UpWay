@@ -31,3 +31,7 @@ class ChatMessageOut(Schema):
 
 class SendMessageRequest(Schema):
     content: str
+
+
+class RenameSessionRequest(Schema):
+    title: str

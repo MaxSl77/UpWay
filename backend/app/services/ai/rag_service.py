@@ -1,38 +1,38 @@
 """
-RAG service — прямая реализация через pgvector + OpenAI Embeddings.
-Без llama-index: чище, быстрее, нет конфликтов версий с Python 3.12.
+RAG service — pgvector + fastembed (local, free, multilingual).
+Table rag_embeddings is created at app startup (main.py lifespan).
 
-Таблица rag_embeddings создаётся при старте приложения (main.py lifespan).
-Схема:
+Schema:
     id        UUID
-    content   TEXT           — текст документа / чанка
-    metadata  JSONB          — произвольные метаданные (тег, источник, дата)
-    embedding vector(1536)   — вектор OpenAI text-embedding-3-small
+    content   TEXT    — chunk text
+    metadata  JSONB   — source, chapter, topic, etc.
+    embedding vector(384) — intfloat/multilingual-e5-small
 """
 import json
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.ai.embeddings import get_embedding
+from app.services.ai.embeddings import get_embedding, get_query_embedding
 
 
 class RAGService:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def retrieve(self, query: str, player=None, top_k: int = 3) -> str:
+    async def retrieve(self, query: str, player=None, top_k: int = 5) -> str:
         """
-        Найти top_k ближайших чанков по косинусному расстоянию.
-        Возвращает строку с объединёнными текстами или '' если база пуста / ошибка.
+        Find top_k nearest chunks by cosine distance.
+        Returns joined texts or '' if DB empty / error.
+        Uses query-prefixed embedding for better multilingual retrieval.
         """
         try:
-            embedding = await get_embedding(query)
-            # Строковое представление вектора для pgvector: '[0.1,0.2,...]'
+            embedding = await get_query_embedding(query)
             vec_str = "[" + ",".join(str(x) for x in embedding) + "]"
 
             result = await self.db.execute(
                 text("""
-                    SELECT content
+                    SELECT content, metadata,
+                           1 - (embedding <=> (:vec)::vector) AS score
                     FROM rag_embeddings
                     ORDER BY embedding <=> (:vec)::vector
                     LIMIT :top_k
@@ -42,14 +42,19 @@ class RAGService:
             rows = result.fetchall()
             if not rows:
                 return ""
-            return "\n\n".join(row[0] for row in rows)
+
+            # Only include chunks with similarity > 0.3 (avoid noise)
+            relevant = [row for row in rows if row[2] > 0.30]
+            if not relevant:
+                relevant = rows[:2]  # fallback: at least top-2
+
+            return "\n\n---\n\n".join(row[0] for row in relevant)
 
         except Exception:
-            # RAG — best-effort, не ломаем чат при любой ошибке
             return ""
 
     async def ingest_document(self, content: str, metadata: dict) -> None:
-        """Добавить документ в базу знаний."""
+        """Add a document chunk to the knowledge base."""
         embedding = await get_embedding(content)
         vec_str = "[" + ",".join(str(x) for x in embedding) + "]"
 
@@ -65,3 +70,8 @@ class RAGService:
             },
         )
         await self.db.commit()
+
+    async def count(self) -> int:
+        """Return total number of chunks in the knowledge base."""
+        result = await self.db.execute(text("SELECT COUNT(*) FROM rag_embeddings"))
+        return result.scalar()

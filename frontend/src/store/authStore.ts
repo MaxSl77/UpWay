@@ -8,37 +8,56 @@ interface AuthState {
   accessToken: string | null
   refreshToken: string | null
   isAuthenticated: boolean
+  bootstrapped: boolean
 
   setUser: (user: User) => void
   setTokens: (accessToken: string, refreshToken: string) => void
   logout: () => Promise<void>
+  forceLogout: () => void
+  initialize: () => Promise<void>
+}
+
+const clearState = {
+  user: null,
+  accessToken: null,
+  refreshToken: null,
+  isAuthenticated: false,
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      user: null,
-      accessToken: null,
-      refreshToken: null,
-      isAuthenticated: false,
+      ...clearState,
+      bootstrapped: false,
 
       setUser: (user) => set({ user }),
 
       setTokens: (accessToken, refreshToken) =>
         set({ accessToken, refreshToken, isAuthenticated: true }),
 
+      forceLogout: () => set({ ...clearState, bootstrapped: true }),
+
       logout: async () => {
         const { refreshToken } = get()
         if (refreshToken) {
-          // Revoke server-side so the token can't be replayed
           await authApi.logout(refreshToken)
         }
-        set({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          isAuthenticated: false,
-        })
+        set({ ...clearState, bootstrapped: true })
+      },
+
+      initialize: async () => {
+        const { isAuthenticated } = get()
+        if (!isAuthenticated) {
+          set({ bootstrapped: true })
+          return
+        }
+        try {
+          const user = await authApi.me()
+          set({ user, bootstrapped: true })
+        } catch {
+          // Token is stale (user deleted, expired, etc.) — clear everything
+          set({ ...clearState, bootstrapped: true })
+        }
       },
     }),
     {

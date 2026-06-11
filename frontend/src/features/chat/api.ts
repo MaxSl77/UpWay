@@ -29,6 +29,15 @@ export const chatApi = {
     return data
   },
 
+  renameSession: async (sessionId: string, title: string): Promise<ChatSession> => {
+    const { data } = await api.patch<ChatSession>(`/chat/sessions/${sessionId}`, { title })
+    return data
+  },
+
+  deleteSession: async (sessionId: string): Promise<void> => {
+    await api.delete(`/chat/sessions/${sessionId}`)
+  },
+
   /**
    * SSE streaming endpoint — returns a ReadableStream.
    * Caller is responsible for consuming the stream.

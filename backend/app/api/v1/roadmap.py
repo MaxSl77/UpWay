@@ -1,15 +1,23 @@
 from uuid import UUID
 
 from fastapi import HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import select, delete
 
-from app.api.deps import CurrentUser, DB
+from app.api.deps import CurrentUser, DB, PLAN_ROADMAP_ACCESS
 from app.core.camel_router import CamelRouter
 from app.models.player import Player
 from app.models.roadmap import RoadmapItem
 from app.schemas.roadmap import RoadmapItemOut, RoadmapItemUpdate
 
 router = CamelRouter()
+
+
+def _check_roadmap_access(current_user) -> None:
+    if not PLAN_ROADMAP_ACCESS.get(current_user.plan, False):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            "Roadmap доступен только на тарифе Старт и выше.",
+        )
 
 
 async def _get_player_or_404(current_user, db) -> Player:
@@ -30,6 +38,7 @@ async def get_roadmap(
     limit: int = Query(default=100, le=100),
     phase: int | None = None,
 ):
+    _check_roadmap_access(current_user)
     result = await db.execute(
         select(Player).where(Player.user_id == current_user.id)
     )
@@ -44,6 +53,27 @@ async def get_roadmap(
 
     result = await db.execute(q)
     return result.scalars().all()
+
+
+@router.post("/regenerate", status_code=202)
+async def regenerate_roadmap(current_user: CurrentUser, db: DB):
+    """
+    Удаляет текущий роадмап и запускает фоновую генерацию заново через Celery.
+    Безопасно: только для своего профиля игрока.
+    """
+    _check_roadmap_access(current_user)
+    player = await _get_player_or_404(current_user, db)
+
+    # Удалить существующий роадмап этого игрока
+    await db.execute(
+        delete(RoadmapItem).where(RoadmapItem.player_id == player.id)
+    )
+    await db.commit()
+
+    from app.tasks.ai_tasks import generate_roadmap_task
+    generate_roadmap_task.delay(str(player.id))
+
+    return {"status": "queued", "player_id": str(player.id)}
 
 
 @router.patch("/{item_id}", response_model=RoadmapItemOut)

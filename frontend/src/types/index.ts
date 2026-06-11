@@ -5,7 +5,7 @@ export interface User {
   email: string
   fullName: string
   avatarUrl?: string
-  plan: 'free' | 'starter' | 'pro'
+  plan: 'free' | 'starter'
   isEmailVerified: boolean
   createdAt: string
 }
@@ -124,7 +124,7 @@ export interface Opportunity {
 
 // ── Subscription ─────────────────────────────────────────────────────────────
 
-export type PlanId = 'free' | 'starter' | 'pro'
+export type PlanId = 'free' | 'starter'
 
 export interface Plan {
   id: PlanId

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useSettingsStore } from '@/store/settingsStore'
 import { StepPlayerInfo } from './StepPlayerInfo'
@@ -11,13 +11,59 @@ import type { Player } from '@/types'
 import api from '@/lib/api'
 
 type FormData = Partial<Omit<Player, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
+type Errors = Record<string, string>
+
+function validateStep(s: number, d: FormData, extra?: { cityValidated: boolean }): Errors {
+  const e: Errors = {}
+  if (s === 1) {
+    const name = (d.name ?? '').trim()
+    if (!name) e.name = 'Введите имя игрока'
+    else if (name.length < 2) e.name = 'Имя должно содержать минимум 2 символа'
+
+    const age = d.age as number | undefined
+    if (!age) e.age = 'Введите возраст'
+    else if (age < 5 || age > 45) e.age = 'Возраст: 5–45 лет'
+
+    const h = d.heightCm as number | undefined
+    if (!h) e.heightCm = 'Введите рост'
+    else if (h < 100 || h > 220) e.heightCm = 'Рост: 100–220 см'
+
+    const w = d.weightKg as number | undefined
+    if (!w) e.weightKg = 'Введите вес'
+    else if (w < 30 || w > 130) e.weightKg = 'Вес: 30–130 кг'
+
+    if (!d.position) e.position = 'Выберите амплуа'
+  }
+  if (s === 2) {
+    if (!d.country) e.country = 'Выберите страну'
+    const city = (d.city ?? '').trim()
+    if (!city) e.city = 'Введите город'
+    else if (!extra?.cityValidated) e.city = 'Выберите город из списка подсказок'
+  }
+  if (s === 3) {
+    if (!d.level) e.level = 'Выберите уровень'
+  }
+  if (s === 4) {
+    if (!d.goals || d.goals.length === 0) e.goals = 'Выберите хотя бы одну цель'
+  }
+  return e
+}
 
 export function OnboardingWizard() {
   const navigate = useNavigate()
   const { language } = useSettingsStore()
   const [step, setStep]             = useState(1)
-  const [data, setData]             = useState<FormData>({})
+  const [data, setData]             = useState<FormData>({
+    skills: { skating: 5, shooting: 5, passing: 5, fitness: 5, sense: 5 },
+  })
+  const [errors, setErrors]         = useState<Errors>({})
+  const [cityValidated, setCityValidated] = useState(false)
   const [completing, setCompleting] = useState(false)
+
+  // If player profile already exists, skip onboarding
+  useEffect(() => {
+    api.get('/players/me').then(() => navigate('/dashboard', { replace: true })).catch(() => {})
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const STEPS = [
     {
@@ -53,10 +99,16 @@ export function OnboardingWizard() {
   const updateData = (patch: FormData) => setData((d) => ({ ...d, ...patch }))
 
   const next = () => {
+    const e = validateStep(step, data, { cityValidated })
+    if (Object.keys(e).length > 0) {
+      setErrors(e)
+      return
+    }
+    setErrors({})
     if (step < STEPS.length) setStep((s) => s + 1)
     else finish()
   }
-  const back = () => setStep((s) => Math.max(1, s - 1))
+  const back = () => { setErrors({}); setStep((s) => Math.max(1, s - 1)) }
 
   const finish = async () => {
     setCompleting(true)
@@ -127,10 +179,10 @@ export function OnboardingWizard() {
             </div>
 
             <div className="flex-1 overflow-y-auto px-12 py-7 scrollbar-thin">
-              {step === 1 && <StepPlayerInfo data={data} onChange={updateData} />}
-              {step === 2 && <StepGeography  data={data} onChange={updateData} />}
-              {step === 3 && <StepLevel      data={data} onChange={updateData} />}
-              {step === 4 && <StepGoals      data={data} onChange={updateData} />}
+              {step === 1 && <StepPlayerInfo data={data} onChange={updateData} errors={errors} />}
+              {step === 2 && <StepGeography  data={data} onChange={updateData} errors={errors} onCityValidated={setCityValidated} />}
+              {step === 3 && <StepLevel      data={data} onChange={updateData} errors={errors} />}
+              {step === 4 && <StepGoals      data={data} onChange={updateData} errors={errors} />}
               {step === 5 && <StepSkills     data={data} onChange={updateData} />}
             </div>
 

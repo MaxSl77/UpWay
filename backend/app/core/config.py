@@ -25,9 +25,13 @@ class Settings(BaseSettings):
     # ── AI ────────────────────────────────────────────────────────────────────
     OPENAI_API_KEY: str = ""
     OPENAI_MODEL: str = "gpt-4o"
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_MODEL: str = "deepseek/deepseek-chat"
     DEEPSEEK_API_KEY: str = ""
     DEEPSEEK_MODEL: str = "deepseek-chat"
-    EMBEDDING_MODEL: str = "text-embedding-3-small"
+    EMBEDDING_MODEL: str = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
+    EMBEDDING_DIM: int = 768
 
     # ── Storage (Yandex Object Storage — S3-compatible) ───────────────────────
     YOS_ENDPOINT_URL: str = "https://storage.yandexcloud.net"
@@ -35,6 +39,11 @@ class Settings(BaseSettings):
     YOS_SECRET_ACCESS_KEY: str = ""
     YOS_BUCKET_NAME: str = "upway-media"
     YOS_REGION: str = "ru-central1"
+
+    # ── Email (Resend) ────────────────────────────────────────────────────────
+    RESEND_API_KEY: str = ""
+    MAIL_FROM: str = "onboarding@resend.dev"
+    MAIL_FROM_NAME: str = "UpWay"
 
     # ── Monitoring ────────────────────────────────────────────────────────────
     SENTRY_DSN: str = ""

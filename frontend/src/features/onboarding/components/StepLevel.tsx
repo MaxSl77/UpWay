@@ -1,7 +1,7 @@
 import type { Player } from '@/types'
 
 type FormData = Partial<Omit<Player, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
-interface Props { data: FormData; onChange: (d: FormData) => void }
+interface Props { data: FormData; onChange: (d: FormData) => void; errors?: Record<string, string> }
 
 const levels = [
   { value: 'amateur',      label: 'Любитель',          sub: 'Дворовый / школьный хоккей' },
@@ -11,9 +11,12 @@ const levels = [
   { value: 'professional', label: 'КХЛ / Профи',        sub: 'Высший уровень' },
 ]
 
-export function StepLevel({ data, onChange }: Props) {
+export function StepLevel({ data, onChange, errors = {} }: Props) {
   return (
     <div className="space-y-3">
+      {errors.level && (
+        <p className="text-danger text-[12.5px] font-medium">{errors.level}</p>
+      )}
       {levels.map((l) => (
         <button
           key={l.value} type="button"

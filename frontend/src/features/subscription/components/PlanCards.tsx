@@ -1,4 +1,4 @@
-import { Check, Zap, Crown, Star } from 'lucide-react'
+import { Check, Zap, Star } from 'lucide-react'
 import { useSettingsStore } from '@/store/settingsStore'
 import { PLAN_DEFS } from '../hooks/useSubscription'
 import type { PlanId } from '@/types'
@@ -9,23 +9,21 @@ interface PlanCardsProps {
   onSelect: (planId: PlanId) => void
 }
 
-const PLAN_ICONS = {
+const PLAN_ICONS: Record<PlanId, React.ReactNode> = {
   free:    <Star size={18} />,
   starter: <Zap size={18} />,
-  pro:     <Crown size={18} />,
 }
 
-const PLAN_COLORS = {
-  free:    { ring: 'border-border', badge: '', icon: 'bg-surface3 text-text-2' },
-  starter: { ring: 'border-accent', badge: 'bg-accent text-[#0a1a11]', icon: 'bg-accent-dim text-accent' },
-  pro:     { ring: 'border-orange', badge: 'bg-orange text-[#1a0a00]', icon: 'bg-orange-dim text-orange' },
+const PLAN_COLORS: Record<PlanId, { ring: string; icon: string; badge: string }> = {
+  free:    { ring: 'border-border',  icon: 'bg-surface3 text-text-2',    badge: '' },
+  starter: { ring: 'border-accent',  icon: 'bg-accent-dim text-accent',  badge: 'bg-accent text-[#0a1a11]' },
 }
 
 export function PlanCards({ currentPlan, formatPrice, onSelect }: PlanCardsProps) {
   const { language } = useSettingsStore()
 
   return (
-    <div className="grid grid-cols-3 gap-4 mb-6">
+    <div className="grid grid-cols-2 gap-6 w-full max-w-3xl mx-auto">
       {PLAN_DEFS.map((plan) => {
         const isCurrent = plan.id === currentPlan
         const isFree    = plan.id === 'free'
@@ -38,13 +36,13 @@ export function PlanCards({ currentPlan, formatPrice, onSelect }: PlanCardsProps
           <div
             key={plan.id}
             className={[
-              'relative bg-surface border rounded-card p-5 flex flex-col transition-all',
+              'relative bg-surface border-2 rounded-card p-8 flex flex-col transition-all',
               isCurrent ? `${colors.ring} shadow-lg` : 'border-border hover:border-text-3',
             ].join(' ')}
           >
             {/* Badge */}
             {plan.badge && (
-              <span className={`absolute -top-2.5 left-1/2 -translate-x-1/2 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${colors.badge}`}>
+              <span className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${colors.badge}`}>
                 {plan.badge}
               </span>
             )}
@@ -55,28 +53,28 @@ export function PlanCards({ currentPlan, formatPrice, onSelect }: PlanCardsProps
             )}
 
             {/* Header */}
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colors.icon}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-11 h-11 rounded-xl flex items-center justify-center ${colors.icon}`}>
                 {PLAN_ICONS[plan.id]}
               </div>
-              <span className="font-display font-bold text-[15px]">{name}</span>
+              <span className="font-display font-bold text-[18px]">{name}</span>
             </div>
 
             {/* Price */}
-            <div className="mb-4">
-              <span className="font-display text-2xl font-extrabold">{price}</span>
+            <div className="mb-6">
+              <span className="font-display text-4xl font-extrabold">{price}</span>
               {!isFree && (
-                <span className="text-text-2 text-[12px] ml-1">
+                <span className="text-text-2 text-[13px] ml-1.5">
                   /{language === 'ru' ? 'мес' : 'mo'}
                 </span>
               )}
             </div>
 
             {/* Features */}
-            <ul className="flex flex-col gap-2 flex-1 mb-5">
+            <ul className="flex flex-col gap-3 flex-1 mb-7">
               {features.map((f, i) => (
-                <li key={i} className="flex items-start gap-2 text-[12.5px] text-text-2">
-                  <Check size={13} className="text-accent mt-0.5 flex-shrink-0" />
+                <li key={i} className="flex items-start gap-2.5 text-[13.5px] text-text-2">
+                  <Check size={15} className="text-accent mt-0.5 flex-shrink-0" />
                   {f}
                 </li>
               ))}
@@ -84,22 +82,17 @@ export function PlanCards({ currentPlan, formatPrice, onSelect }: PlanCardsProps
 
             {/* CTA */}
             {isCurrent ? (
-              <div className="h-10 rounded-btn border border-accent text-accent text-[13px] font-semibold flex items-center justify-center">
+              <div className="h-12 rounded-btn border border-accent text-accent text-[14px] font-semibold flex items-center justify-center">
                 {language === 'ru' ? '✓ Текущий план' : '✓ Current plan'}
               </div>
             ) : isFree ? (
-              <div className="h-10 rounded-btn border border-border text-text-3 text-[13px] flex items-center justify-center">
+              <div className="h-12 rounded-btn border border-border text-text-3 text-[13px] flex items-center justify-center">
                 {language === 'ru' ? 'Базовый' : 'Basic'}
               </div>
             ) : (
               <button
                 onClick={() => onSelect(plan.id)}
-                className={[
-                  'h-10 rounded-btn font-semibold text-[13px] transition-all',
-                  plan.id === 'starter'
-                    ? 'bg-accent text-[#0a1a11] hover:bg-[#30e887] hover:shadow-accent'
-                    : 'bg-orange text-[#1a0a00] hover:bg-[#ffb84d]',
-                ].join(' ')}
+                className="h-12 rounded-btn font-semibold text-[14px] bg-accent text-[#0a1a11] hover:bg-[#30e887] hover:shadow-accent transition-all"
               >
                 {language === 'ru' ? `Перейти на ${name}` : `Upgrade to ${name}`}
               </button>

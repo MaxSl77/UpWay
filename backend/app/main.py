@@ -34,7 +34,7 @@ async def lifespan(app: FastAPI):
                     id       UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                     content  TEXT NOT NULL,
                     metadata JSONB DEFAULT '{}'::jsonb,
-                    embedding vector(1536)
+                    embedding vector(768)
                 )
             """))
     yield

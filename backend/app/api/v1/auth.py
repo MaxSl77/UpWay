@@ -72,9 +72,13 @@ async def register(request: Request, payload: RegisterRequest, db: DB):
     redis = await get_redis()
     await redis.setex(_verify_key(verify_token), VERIFY_TOKEN_TTL_SEC, str(user.id))
 
-    # TODO: send verify_token to user.email via Celery task
-    # send_email.delay(user.email, "Verify your email",
-    #   f"{settings.FRONTEND_URL}/verify-email?token={verify_token}")
+    # Send verification email (non-blocking — fire and forget)
+    verify_url = f"{settings.FRONTEND_URL}/verify-email?token={verify_token}"
+    try:
+        from app.services.email import send_verification
+        await send_verification(user.email, user.full_name, verify_url)
+    except Exception:
+        pass  # Email failure must never block registration
 
     return _make_token_response(user)
 
@@ -156,6 +160,26 @@ async def verify_email(payload: EmailVerifyRequest, db: DB):
     return {"detail": "Email verified successfully"}
 
 
+@router.post("/resend-verification", status_code=202)
+async def resend_verification(current_user: CurrentUser):
+    """Re-send verification email for the currently authenticated user."""
+    if current_user.is_email_verified:
+        return {"detail": "Email already verified"}
+
+    verify_token = generate_opaque_token()
+    redis = await get_redis()
+    await redis.setex(_verify_key(verify_token), VERIFY_TOKEN_TTL_SEC, str(current_user.id))
+
+    verify_url = f"{settings.FRONTEND_URL}/verify-email?token={verify_token}"
+    try:
+        from app.services.email import send_verification
+        await send_verification(current_user.email, current_user.full_name, verify_url)
+    except Exception:
+        pass
+
+    return {"detail": "Verification email sent"}
+
+
 # ── Me ────────────────────────────────────────────────────────────────────────
 
 @router.get("/me", response_model=UserOut)
@@ -177,9 +201,12 @@ async def request_password_reset(payload: PasswordResetRequest, db: DB):
         # One token per user: delete any existing token for this user first
         await redis.setex(_reset_key(token), RESET_TOKEN_TTL_SEC, str(user.id))
 
-        # TODO: send token via Celery task
-        # send_email.delay(user.email, "Reset your password",
-        #   f"{settings.FRONTEND_URL}/reset-password?token={token}")
+        reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
+        try:
+            from app.services.email import send_password_reset
+            await send_password_reset(user.email, user.full_name, reset_url)
+        except Exception:
+            pass  # Email failure must not reveal whether user exists
 
     return {"detail": "If the email exists, a reset link has been sent."}
 
@@ -205,6 +232,25 @@ async def confirm_password_reset(payload: PasswordResetConfirm, db: DB):
     return {"detail": "Password updated successfully."}
 
 
+# ── Change password (authenticated) ──────────────────────────────────────────
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
+@router.post("/change-password", status_code=200)
+async def change_password(payload: ChangePasswordRequest, current_user: CurrentUser, db: DB):
+    if len(payload.new_password) < 8:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "Password must be at least 8 characters")
+    if not verify_password(payload.current_password, current_user.hashed_password):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Current password is incorrect")
+    current_user.hashed_password = hash_password(payload.new_password)
+    db.add(current_user)
+    await db.flush()
+    return {"detail": "Password changed successfully"}
+
+
 # ── Account management ────────────────────────────────────────────────────────
 
 class PlanUpdateRequest(BaseModel):
@@ -223,7 +269,7 @@ async def update_plan(payload: PlanUpdateRequest, current_user: CurrentUser, db:
             status.HTTP_403_FORBIDDEN,
             "Plan changes must go through the payment provider.",
         )
-    if payload.plan not in {"free", "starter", "pro"}:
+    if payload.plan not in {"free", "starter"}:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid plan")
     current_user.plan = payload.plan
     db.add(current_user)

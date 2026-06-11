@@ -5,9 +5,12 @@ import { FullPageSpinner } from '@/components/shared/FullPageSpinner'
 import { AuthGuard } from '@/components/shared/AuthGuard'
 
 // Auth screens (no shell)
-const LoginPage       = lazy(() => import('@/pages/LoginPage'))
-const RecoveryPage    = lazy(() => import('@/pages/RecoveryPage'))
-const OnboardingPage  = lazy(() => import('@/pages/OnboardingPage'))
+const LoginPage           = lazy(() => import('@/pages/LoginPage'))
+const RecoveryPage        = lazy(() => import('@/pages/RecoveryPage'))
+const ResetPasswordPage   = lazy(() => import('@/pages/ResetPasswordPage'))
+const VerifyEmailPage     = lazy(() => import('@/pages/VerifyEmailPage'))
+const VerifyPendingPage   = lazy(() => import('@/pages/VerifyPendingPage'))
+const OnboardingPage      = lazy(() => import('@/pages/OnboardingPage'))
 
 // App screens (inside AppShell)
 const DashboardPage     = lazy(() => import('@/pages/DashboardPage'))
@@ -33,6 +36,18 @@ export const router = createBrowserRouter([
   {
     path: '/recovery',
     element: wrap(<RecoveryPage />),
+  },
+  {
+    path: '/reset-password',
+    element: wrap(<ResetPasswordPage />),
+  },
+  {
+    path: '/verify-email',
+    element: wrap(<VerifyEmailPage />),
+  },
+  {
+    path: '/verify-pending',
+    element: wrap(<VerifyPendingPage />),
   },
 
   // ── Onboarding (authenticated but no shell) ────

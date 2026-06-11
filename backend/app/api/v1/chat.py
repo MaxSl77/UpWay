@@ -8,7 +8,7 @@ from app.api.deps import CurrentUser, DB, CheckMessageLimit
 from app.models.chat import ChatSession, ChatMessage
 from app.schemas.chat import (
     ChatSessionOut, ChatMessageOut,
-    SendMessageRequest, CreateSessionResponse,
+    SendMessageRequest, CreateSessionResponse, RenameSessionRequest,
 )
 from app.services.ai.chat_service import ChatService
 
@@ -31,6 +31,42 @@ async def create_session(current_user: CurrentUser, db: DB):
     db.add(session)
     await db.flush()
     return session
+
+
+@router.patch("/sessions/{session_id}", response_model=ChatSessionOut)
+async def rename_session(
+    session_id: UUID,
+    payload: RenameSessionRequest,
+    current_user: CurrentUser,
+    db: DB,
+):
+    result = await db.execute(
+        select(ChatSession).where(
+            ChatSession.id == session_id,
+            ChatSession.user_id == current_user.id,
+        )
+    )
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found")
+    session.title = payload.title.strip()[:255] or session.title
+    await db.flush()
+    return session
+
+
+@router.delete("/sessions/{session_id}", status_code=204)
+async def delete_session(session_id: UUID, current_user: CurrentUser, db: DB):
+    result = await db.execute(
+        select(ChatSession).where(
+            ChatSession.id == session_id,
+            ChatSession.user_id == current_user.id,
+        )
+    )
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found")
+    await db.delete(session)
+    await db.flush()
 
 
 @router.get("/sessions/{session_id}/messages", response_model=list[ChatMessageOut])
@@ -70,17 +106,24 @@ async def send_message(
     if not session:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found")
 
-    # Persist user message
+    # Persist user message and commit immediately so concurrent GET /messages
+    # requests (e.g. user switches session and back) can see it right away.
     user_msg = ChatMessage(session_id=session_id, role="user", content=payload.content)
     db.add(user_msg)
-    await db.flush()
+    await db.commit()   # ← explicit early commit before slow AI call
 
-    # Generate AI response (RAG + GPT-4o)
+    # Generate AI response
     service = ChatService(db=db, user=current_user)
-    ai_content, context_card = await service.generate_response(
-        session_id=session_id,
-        user_message=payload.content,
-    )
+    try:
+        ai_content, context_card = await service.generate_response(
+            session_id=session_id,
+            user_message=payload.content,
+        )
+    except Exception as e:
+        err_str = str(e)
+        if "401" in err_str or "Authentication" in err_str or "User not found" in err_str:
+            raise HTTPException(status.HTTP_502_BAD_GATEWAY, "AI service authentication error. Check OPENROUTER_API_KEY.")
+        raise HTTPException(status.HTTP_502_BAD_GATEWAY, f"AI service error: {err_str[:200]}")
 
     ai_msg = ChatMessage(
         session_id=session_id,

@@ -6,6 +6,7 @@ import { useCalendarStore } from '@/store/calendarStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { EventModal } from '@/features/calendar/components/EventModal'
 import type { ChatMessage as ChatMessageType } from '@/types'
+import { MarkdownContent } from './MarkdownContent'
 import type { CreateEventPayload } from '@/features/calendar/hooks/useCalendar'
 
 // ── Heuristic: detect date-like text in AI message ──────────────────────────
@@ -99,7 +100,10 @@ export function ChatMessage({ message }: Props) {
                 : 'bg-bubble-parent border border-accent/20 rounded-br-sm text-[#e2f8ec]',
             )}
           >
-            {message.content}
+            {isAI
+              ? <MarkdownContent content={message.content} />
+              : <p className="text-[13.5px] leading-relaxed">{message.content}</p>
+            }
 
             {isAI && message.contextCard && (
               <div className="mt-2.5 bg-surface border border-border border-l-[3px] border-l-accent rounded-lg px-3.5 py-3 text-[12.5px] text-text-2">

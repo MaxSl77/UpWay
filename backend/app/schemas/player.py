@@ -19,7 +19,7 @@ class PlayerSkillsSchema(Schema):
 
 class PlayerCreate(Schema):
     name:          str         = Field(min_length=2, max_length=255)
-    age:           int         = Field(ge=5, le=25)
+    age:           int         = Field(ge=5, le=45)
     height_cm:     int         = Field(ge=100, le=220)   # camelCase: heightCm
     weight_kg:     int         = Field(ge=30, le=130)    # camelCase: weightKg
     position:      Position

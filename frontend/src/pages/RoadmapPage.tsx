@@ -1,12 +1,42 @@
+import { useState } from 'react'
+import { RefreshCw } from 'lucide-react'
 import { TopBar } from '@/components/layout/TopBar'
 import { RoadmapTimeline } from '@/features/roadmap/components/RoadmapTimeline'
 import { PhaseFilter } from '@/features/roadmap/components/PhaseFilter'
 import { useRoadmap } from '@/features/roadmap/hooks/useRoadmap'
 import { usePlayerStore } from '@/store/playerStore'
+import api from '@/lib/api'
 
 export default function RoadmapPage() {
-  const { phases, allItems, items, activePhase, setActivePhase, isLoading, updateStatus } = useRoadmap()
+  const { phases, allItems, items, activePhase, setActivePhase, isLoading, updateStatus, refetch } = useRoadmap()
   const player = usePlayerStore((s) => s.player)
+  const [regenerating, setRegenerating] = useState(false)
+
+  const handleRegenerate = async () => {
+    if (!confirm('Перегенерировать роадмап? Текущий будет удалён.')) return
+    setRegenerating(true)
+    try {
+      await api.post('/roadmap/regenerate')
+      // Poll every 2.5s until roadmap items appear (max 60s)
+      let attempts = 0
+      const poll = async () => {
+        attempts++
+        try {
+          const { data } = await api.get('/roadmap/')
+          if (Array.isArray(data) && data.length > 0) {
+            refetch?.()
+            setRegenerating(false)
+            return
+          }
+        } catch { /* ignore */ }
+        if (attempts < 24) setTimeout(poll, 2500)
+        else setRegenerating(false) // timeout after 60s
+      }
+      setTimeout(poll, 2500)
+    } catch {
+      setRegenerating(false)
+    }
+  }
 
   const done   = allItems.filter((i) => i.status === 'done').length
   const total  = allItems.length
@@ -22,6 +52,17 @@ export default function RoadmapPage() {
       <TopBar
         title="Career Roadmap"
         subtitle={`${primaryGoal} · ${done} из ${total} этапов выполнено`}
+        action={
+          <button
+            onClick={handleRegenerate}
+            disabled={regenerating || isLoading}
+            className="flex items-center gap-1.5 h-8 px-3 rounded-btn bg-surface border border-border text-[12px] text-text-2 hover:border-accent hover:text-accent transition-all disabled:opacity-50"
+            title="Перегенерировать роадмап через AI"
+          >
+            <RefreshCw size={13} className={regenerating ? 'animate-spin' : ''} />
+            {regenerating ? 'Генерация...' : 'Обновить AI'}
+          </button>
+        }
       />
 
       <div className="flex-1 overflow-y-auto px-7 py-6 pb-16 scrollbar-thin">

@@ -5,13 +5,16 @@ interface ChatState {
   sessions: ChatSession[]
   activeSessionId: string | null
   messages: ChatMessage[]
-  isStreaming: boolean
+  messagesLoading: boolean
+  /** ID сессии, для которой сейчас идёт запрос к AI (null = не идёт) */
+  streamingSessionId: string | null
 
   setSessions: (sessions: ChatSession[]) => void
   setActiveSession: (id: string) => void
   setMessages: (messages: ChatMessage[]) => void
+  setMessagesLoading: (loading: boolean) => void
   appendMessage: (message: ChatMessage) => void
-  setStreaming: (streaming: boolean) => void
+  setStreamingSession: (id: string | null) => void
   reset: () => void
 }
 
@@ -19,14 +22,24 @@ export const useChatStore = create<ChatState>((set) => ({
   sessions: [],
   activeSessionId: null,
   messages: [],
-  isStreaming: false,
+  messagesLoading: false,
+  streamingSessionId: null,
 
   setSessions: (sessions) => set({ sessions }),
-  setActiveSession: (id) => set({ activeSessionId: id, messages: [] }),
-  setMessages: (messages) => set({ messages }),
+  setActiveSession: (id) => set((state) => {
+    const switching = state.activeSessionId !== id
+    return {
+      activeSessionId: id,
+      messages: switching ? [] : state.messages,
+      // loading только при переходе в другую сессию
+      messagesLoading: switching,
+    }
+  }),
+  setMessages: (messages) => set({ messages, messagesLoading: false }),
+  setMessagesLoading: (messagesLoading) => set({ messagesLoading }),
   appendMessage: (message) =>
     set((state) => ({ messages: [...state.messages, message] })),
-  setStreaming: (isStreaming) => set({ isStreaming }),
+  setStreamingSession: (streamingSessionId) => set({ streamingSessionId }),
   reset: () =>
-    set({ sessions: [], activeSessionId: null, messages: [], isStreaming: false }),
+    set({ sessions: [], activeSessionId: null, messages: [], messagesLoading: false, streamingSessionId: null }),
 }))

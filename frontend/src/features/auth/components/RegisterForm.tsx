@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { authApi } from '../api'
+import type { AxiosError } from 'axios'
 
 export function RegisterForm() {
   const navigate  = useNavigate()
@@ -25,10 +26,11 @@ export function RegisterForm() {
       { label: language === 'ru' ? 'Пароль'               : 'Password',          key: 'password'        as const, type: 'password', placeholder: language === 'ru' ? 'Минимум 8 символов' : 'Min. 8 characters' },
       { label: language === 'ru' ? 'Подтвердите пароль'   : 'Confirm Password',  key: 'confirmPassword' as const, type: 'password', placeholder: language === 'ru' ? 'Повторите пароль'  : 'Repeat your password' },
     ],
-    passwordMismatch: language === 'ru' ? 'Пароли не совпадают.'           : 'Passwords do not match.',
-    errorMsg:         language === 'ru' ? 'Ошибка регистрации. Попробуйте ещё раз.' : 'Registration failed. Please try again.',
-    submit:           language === 'ru' ? 'Создать аккаунт'                : 'Create Account',
-    loading:          language === 'ru' ? 'Создаём аккаунт…'              : 'Creating account…',
+    passwordMismatch: language === 'ru' ? 'Пароли не совпадают.'                                       : 'Passwords do not match.',
+    emailTaken:       language === 'ru' ? 'Аккаунт с этим email уже существует.'                        : 'An account with this email already exists.',
+    errorMsg:         language === 'ru' ? 'Ошибка регистрации. Попробуйте ещё раз.'                     : 'Registration failed. Please try again.',
+    submit:   language === 'ru' ? 'Создать аккаунт' : 'Create Account',
+    loading:  language === 'ru' ? 'Создаём аккаунт…' : 'Creating account…',
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,9 +45,10 @@ export function RegisterForm() {
       const { accessToken, refreshToken, user } = await authApi.register(form)
       setTokens(accessToken, refreshToken)
       setUser(user)
-      navigate('/onboarding')
-    } catch {
-      setError(t.errorMsg)
+      navigate('/verify-pending', { replace: true })
+    } catch (err) {
+      const status = (err as AxiosError)?.response?.status
+      setError(status === 409 ? t.emailTaken : t.errorMsg)
     } finally {
       setLoading(false)
     }

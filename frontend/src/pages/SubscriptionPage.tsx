@@ -18,7 +18,7 @@ export default function SubscriptionPage() {
   return (
     <>
       <TopBar title={title} subtitle={subtitle} />
-      <div className="flex-1 overflow-y-auto px-7 py-6 pb-16 scrollbar-thin flex flex-col gap-6">
+      <div className="flex-1 overflow-y-auto px-7 py-6 pb-16 scrollbar-thin flex flex-col items-center gap-6">
         <PlanCards
           currentPlan={currentPlan}
           formatPrice={formatPrice}
