@@ -7,6 +7,8 @@ interface PlanCardsProps {
   currentPlan: PlanId
   formatPrice: (prices: { rub: number; byn: number; usd: number }) => string
   onSelect: (planId: PlanId) => void
+  /** Открывает подтверждение отмены подписки (возврат на free) */
+  onCancel?: () => void
 }
 
 const PLAN_ICONS: Record<PlanId, React.ReactNode> = {
@@ -14,7 +16,7 @@ const PLAN_ICONS: Record<PlanId, React.ReactNode> = {
   starter: <Zap size={20} />,
 }
 
-export function PlanCards({ currentPlan, formatPrice, onSelect }: PlanCardsProps) {
+export function PlanCards({ currentPlan, formatPrice, onSelect, onCancel }: PlanCardsProps) {
   const { language } = useSettingsStore()
   const ru = language === 'ru'
 
@@ -115,9 +117,13 @@ export function PlanCards({ currentPlan, formatPrice, onSelect }: PlanCardsProps
                 {ru ? 'Текущий план' : 'Current plan'}
               </div>
             ) : isFree ? (
-              <div className="h-btn-lg rounded-btn border border-border text-text-3 text-[13px] flex items-center justify-center">
-                {ru ? 'Всегда бесплатно' : 'Free forever'}
-              </div>
+              // Пользователь на платном тарифе: карточка Free — это «вернуться назад»
+              <button
+                onClick={onCancel}
+                className="h-btn-lg rounded-btn border border-border text-text-2 text-[13.5px] font-medium hover:border-danger/60 hover:text-danger transition-colors"
+              >
+                {ru ? 'Вернуться на Бесплатный' : 'Switch back to Free'}
+              </button>
             ) : (
               <button
                 onClick={() => onSelect(plan.id)}

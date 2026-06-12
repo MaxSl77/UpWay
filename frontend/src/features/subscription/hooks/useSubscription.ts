@@ -63,6 +63,8 @@ export function useSubscription() {
   const [paymentResult, setPaymentResult] = useState<PaymentResult>(null)
   const [mockOutcome, setMockOutcome] = useState<'success' | 'failure'>('success')
   const [processing, setProcessing] = useState(false)
+  const [cancelModal, setCancelModal] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
 
   const currentPlan = (useAuthStore((s) => s.user)?.plan ?? 'free') as PlanId
 
@@ -107,6 +109,19 @@ export function useSubscription() {
     setProcessing(false)
   }
 
+  // Отмена подписки: бэкенд переводит на free и возвращает обновлённого юзера.
+  // Работает и в production (деньги не двигаются — только отказ от продления).
+  const cancelSubscription = async () => {
+    setCancelling(true)
+    try {
+      const { data } = await api.post('/subscriptions/cancel')
+      useAuthStore.getState().setUser(data)
+      setCancelModal(false)
+    } finally {
+      setCancelling(false)
+    }
+  }
+
   const formatPrice = (prices: { rub: number; byn: number; usd: number }): string => {
     const symbols: Record<string, string> = { rub: '₽', byn: 'Br', usd: '$' }
     const val = prices[currency as keyof typeof prices]
@@ -122,11 +137,15 @@ export function useSubscription() {
     paymentResult,
     mockOutcome,
     processing,
+    cancelModal,
+    cancelling,
     formatPrice,
     openPayment,
     closePayment,
     retryPayment,
     processPayment,
     setMockOutcome,
+    setCancelModal,
+    cancelSubscription,
   }
 }

@@ -4,6 +4,7 @@ import { PlanCards } from '@/features/subscription/components/PlanCards'
 import { PlanComparison } from '@/features/subscription/components/PlanComparison'
 import { BillingInfo } from '@/features/subscription/components/BillingInfo'
 import { PaymentModal } from '@/features/subscription/components/PaymentModal'
+import { CancelSubscriptionModal } from '@/features/subscription/components/CancelSubscriptionModal'
 import { useSubscription } from '@/features/subscription/hooks/useSubscription'
 import { useSettingsStore } from '@/store/settingsStore'
 
@@ -12,7 +13,9 @@ export default function SubscriptionPage() {
   const ru = language === 'ru'
   const {
     currentPlan, paymentModal, paymentResult, mockOutcome, processing,
+    cancelModal, cancelling,
     formatPrice, openPayment, closePayment, retryPayment, processPayment, setMockOutcome,
+    setCancelModal, cancelSubscription,
   } = useSubscription()
 
   const trust = [
@@ -79,6 +82,7 @@ export default function SubscriptionPage() {
             currentPlan={currentPlan}
             formatPrice={formatPrice}
             onSelect={openPayment}
+            onCancel={() => setCancelModal(true)}
           />
 
           {/* ── Трастовая полоса ── */}
@@ -113,6 +117,19 @@ export default function SubscriptionPage() {
               {ru ? 'Ваша подписка' : 'Your subscription'}
             </h2>
             <BillingInfo />
+
+            {/* Отмена подписки — только для платных тарифов */}
+            {currentPlan !== 'free' && (
+              <p className="text-center mt-5 text-[12.5px] text-text-3">
+                {ru ? 'Передумали? ' : 'Changed your mind? '}
+                <button
+                  onClick={() => setCancelModal(true)}
+                  className="text-danger/80 hover:text-danger font-medium hover:underline transition-colors"
+                >
+                  {ru ? 'Отменить подписку' : 'Cancel subscription'}
+                </button>
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -128,6 +145,14 @@ export default function SubscriptionPage() {
           onRetry={retryPayment}
           onPay={processPayment}
           onClose={closePayment}
+        />
+      )}
+
+      {cancelModal && (
+        <CancelSubscriptionModal
+          cancelling={cancelling}
+          onConfirm={cancelSubscription}
+          onClose={() => setCancelModal(false)}
         />
       )}
     </>
