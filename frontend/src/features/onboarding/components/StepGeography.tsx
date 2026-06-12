@@ -1,5 +1,6 @@
 import type { Player } from '@/types'
 import { CityInput } from './CityInput'
+import { isAllowedPlaceNameInput } from '@/lib/validation'
 
 type FormData = Partial<Omit<Player, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 interface Props {
@@ -14,7 +15,10 @@ const countries = ['Беларусь', 'Россия', 'Казахстан', 'У
 export function StepGeography({ data, onChange, errors = {}, onCityValidated }: Props) {
   const textField = (key: keyof FormData) => ({
     value: (data[key] as string) ?? '',
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) => onChange({ [key]: e.target.value }),
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      // Посимвольный фильтр: ссылки и спецсимволы не вводятся вовсе
+      if (isAllowedPlaceNameInput(e.target.value)) onChange({ [key]: e.target.value })
+    },
   })
 
   const inputCls = (errKey: string) =>

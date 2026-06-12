@@ -39,6 +39,15 @@ export default function VerifyPendingPage() {
     resend:  language === 'ru' ? 'Выслать повторно'    : 'Resend email',
     sending: language === 'ru' ? 'Отправляем…'         : 'Sending…',
     sent:    language === 'ru' ? '✓ Письмо отправлено' : '✓ Email sent',
+    wrongEmail: language === 'ru' ? 'Ошиблись в адресе?' : 'Entered the wrong email?',
+    changeEmail: language === 'ru' ? 'Зарегистрироваться заново' : 'Register again',
+  }
+
+  // Пользователь опечатался в email при регистрации: выходим из аккаунта
+  // и возвращаем на вкладку регистрации, иначе он застрянет на этом экране.
+  const startOver = () => {
+    forceLogout()
+    navigate('/login?tab=register', { replace: true })
   }
 
   return (
@@ -79,6 +88,16 @@ export default function VerifyPendingPage() {
                 {loading ? t.sending : t.resend}
               </button>
             )}
+
+            <p className="text-[12px] text-text-3 mt-6">
+              {t.wrongEmail}{' '}
+              <button
+                onClick={startOver}
+                className="text-accent font-medium hover:underline"
+              >
+                {t.changeEmail}
+              </button>
+            </p>
           </div>
         </div>
       </main>

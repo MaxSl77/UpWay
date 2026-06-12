@@ -9,6 +9,7 @@ import { StepSkills } from './StepSkills'
 import { OnboardingComplete } from './OnboardingComplete'
 import type { Player } from '@/types'
 import api from '@/lib/api'
+import { validatePlaceName } from '@/lib/validation'
 
 type FormData = Partial<Omit<Player, 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
 type Errors = Record<string, string>
@@ -39,6 +40,11 @@ function validateStep(s: number, d: FormData, extra?: { cityValidated: boolean }
     const city = (d.city ?? '').trim()
     if (!city) e.city = 'Введите город'
     else if (!extra?.cityValidated) e.city = 'Выберите город из списка подсказок'
+
+    const teamErr = validatePlaceName((d.team as string) ?? '', 'ru')
+    if (teamErr) e.team = teamErr
+    const schoolErr = validatePlaceName((d.hockeySchool as string) ?? '', 'ru')
+    if (schoolErr) e.hockeySchool = schoolErr
   }
   if (s === 3) {
     if (!d.level) e.level = 'Выберите уровень'

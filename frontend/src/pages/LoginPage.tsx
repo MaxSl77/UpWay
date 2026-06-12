@@ -1,7 +1,7 @@
 import { LoginForm } from '@/features/auth/components/LoginForm'
 import { RegisterForm } from '@/features/auth/components/RegisterForm'
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useSettingsStore } from '@/store/settingsStore'
 
@@ -9,7 +9,9 @@ type Tab = 'signin' | 'register'
 
 export default function LoginPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const [tab, setTab] = useState<Tab>('signin')
+  const [params] = useSearchParams()
+  // ?tab=register — сюда возвращает verify-pending при опечатке в email
+  const [tab, setTab] = useState<Tab>(params.get('tab') === 'register' ? 'register' : 'signin')
   const { language, setLanguage } = useSettingsStore()
 
   // Already logged in — send to dashboard instead of showing login form

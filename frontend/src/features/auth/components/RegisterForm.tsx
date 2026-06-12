@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'
 import { useSettingsStore } from '@/store/settingsStore'
 import { authApi } from '../api'
+import { validateHumanName, validateEmail, validatePassword } from '@/lib/validation'
 import type { AxiosError } from 'axios'
 
 export function RegisterForm() {
@@ -14,8 +15,9 @@ export function RegisterForm() {
   const [form, setForm] = useState({
     fullName: '', email: '', password: '', confirmPassword: '',
   })
-  const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState<string | null>(null)
+  const [loading, setLoading]         = useState(false)
+  const [error,   setError]           = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof typeof form, string>>>({})
 
   const t = {
     title:    language === 'ru' ? 'Создать аккаунт'                              : 'Create account',
@@ -33,12 +35,22 @@ export function RegisterForm() {
     loading:  language === 'ru' ? 'Создаём аккаунт…' : 'Creating account…',
   }
 
+  const validate = (): boolean => {
+    const errs: Partial<Record<keyof typeof form, string>> = {}
+    const nameErr  = validateHumanName(form.fullName, language)
+    const emailErr = validateEmail(form.email, language)
+    const passErr  = validatePassword(form.password, language)
+    if (nameErr)  errs.fullName = nameErr
+    if (emailErr) errs.email = emailErr
+    if (passErr)  errs.password = passErr
+    if (form.password !== form.confirmPassword) errs.confirmPassword = t.passwordMismatch
+    setFieldErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (form.password !== form.confirmPassword) {
-      setError(t.passwordMismatch)
-      return
-    }
+    if (!validate()) return
     setLoading(true)
     setError(null)
     try {
@@ -56,8 +68,11 @@ export function RegisterForm() {
 
   const field = (key: keyof typeof form) => ({
     value: form[key],
-    onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-      setForm((prev) => ({ ...prev, [key]: e.target.value })),
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
+      setForm((prev) => ({ ...prev, [key]: e.target.value }))
+      // Ошибка поля сбрасывается, как только пользователь начал исправлять
+      setFieldErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev))
+    },
   })
 
   return (
@@ -74,9 +89,15 @@ export function RegisterForm() {
             type={type}
             {...field(key)}
             placeholder={placeholder}
-            className="w-full h-[44px] px-3.5 bg-surface2 border border-border rounded-btn text-text text-sm focus:outline-none focus:border-accent transition-colors"
+            maxLength={key === 'fullName' ? 100 : key === 'email' ? 255 : 128}
+            className={`w-full h-[44px] px-3.5 bg-surface2 border rounded-btn text-text text-sm focus:outline-none transition-colors ${
+              fieldErrors[key] ? 'border-danger focus:border-danger' : 'border-border focus:border-accent'
+            }`}
             required
           />
+          {fieldErrors[key] && (
+            <p className="text-danger text-[11.5px] mt-1">{fieldErrors[key]}</p>
+          )}
         </div>
       ))}
 

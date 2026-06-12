@@ -1,8 +1,12 @@
 from uuid import UUID
 from datetime import datetime
-from pydantic import EmailStr, Field
+from typing import Annotated
+from pydantic import EmailStr, Field, AfterValidator
 
 from app.core.base_schema import Schema
+from app.core.validators import human_name
+
+HumanName = Annotated[str, AfterValidator(human_name)]
 
 
 class LoginRequest(Schema):
@@ -11,9 +15,9 @@ class LoginRequest(Schema):
 
 
 class RegisterRequest(Schema):
-    full_name: str = Field(min_length=2, max_length=255)  # camelCase: fullName
+    full_name: HumanName  # camelCase: fullName
     email: EmailStr
-    password: str = Field(min_length=8)
+    password: str = Field(min_length=8, max_length=128)
 
 
 class RefreshRequest(Schema):
@@ -30,7 +34,7 @@ class PasswordResetRequest(Schema):
 
 class PasswordResetConfirm(Schema):
     token: str
-    new_password: str = Field(min_length=8)  # camelCase: newPassword
+    new_password: str = Field(min_length=8, max_length=128)  # camelCase: newPassword
 
 
 class EmailVerifyRequest(Schema):

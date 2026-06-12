@@ -1,8 +1,10 @@
 from uuid import UUID
 from datetime import datetime
-from pydantic import Field
+from typing import Annotated
+from pydantic import AfterValidator
 
 from app.core.base_schema import Schema
+from app.core.validators import short_text, free_text
 
 
 class CreateSessionResponse(Schema):
@@ -30,8 +32,8 @@ class ChatMessageOut(Schema):
 
 
 class SendMessageRequest(Schema):
-    content: str
+    content: Annotated[str, AfterValidator(free_text(4000))]
 
 
 class RenameSessionRequest(Schema):
-    title: str
+    title: Annotated[str, AfterValidator(short_text(120))]

@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
+import { useSettingsStore } from '@/store/settingsStore'
+import { validateHumanName, validatePlaceName } from '@/lib/validation'
 import type { Player } from '@/types'
 import type { PlayerUpdatePayload } from '../api'
 
@@ -49,9 +51,25 @@ export function ProfileEditModal({ player, onSave, onClose }: Props) {
   })
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+  const { language } = useSettingsStore()
 
-  const set = (field: keyof PlayerUpdatePayload, value: unknown) =>
+  const set = (field: keyof PlayerUpdatePayload, value: unknown) => {
     setForm((prev) => ({ ...prev, [field]: value }))
+    setFieldErrors((prev) => (prev[field] ? { ...prev, [field]: '' } : prev))
+  }
+
+  const validate = (): boolean => {
+    const errs: Record<string, string> = {}
+    const nameErr = validateHumanName(form.name ?? '', language)
+    if (nameErr) errs.name = nameErr
+    for (const key of ['country', 'city', 'team', 'hockeySchool'] as const) {
+      const err = validatePlaceName((form[key] as string) ?? '', language)
+      if (err) errs[key] = err
+    }
+    setFieldErrors(errs)
+    return Object.keys(errs).length === 0
+  }
 
   const setSkill = (key: string, value: number) =>
     setForm((prev) => ({
@@ -67,6 +85,7 @@ export function ProfileEditModal({ player, onSave, onClose }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!validate()) return
     setIsSaving(true)
     setError(null)
     try {
@@ -112,13 +131,14 @@ export function ProfileEditModal({ player, onSave, onClose }: Props) {
               Основное
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Имя">
+              <Field label="Имя" error={fieldErrors.name}>
                 <input
                   type="text"
                   value={form.name}
+                  maxLength={100}
                   onChange={(e) => set('name', e.target.value)}
                   required
-                  className={inputCls}
+                  className={cn(inputCls, fieldErrors.name && 'border-danger focus:border-danger')}
                 />
               </Field>
               <Field label="Возраст">
@@ -179,36 +199,40 @@ export function ProfileEditModal({ player, onSave, onClose }: Props) {
               География
             </h3>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Страна">
+              <Field label="Страна" error={fieldErrors.country}>
                 <input
                   type="text"
                   value={form.country}
+                  maxLength={100}
                   onChange={(e) => set('country', e.target.value)}
-                  className={inputCls}
+                  className={cn(inputCls, fieldErrors.country && 'border-danger focus:border-danger')}
                 />
               </Field>
-              <Field label="Город">
+              <Field label="Город" error={fieldErrors.city}>
                 <input
                   type="text"
                   value={form.city ?? ''}
+                  maxLength={100}
                   onChange={(e) => set('city', e.target.value)}
-                  className={inputCls}
+                  className={cn(inputCls, fieldErrors.city && 'border-danger focus:border-danger')}
                 />
               </Field>
-              <Field label="Команда">
+              <Field label="Команда" error={fieldErrors.team}>
                 <input
                   type="text"
                   value={form.team ?? ''}
+                  maxLength={100}
                   onChange={(e) => set('team', e.target.value)}
-                  className={inputCls}
+                  className={cn(inputCls, fieldErrors.team && 'border-danger focus:border-danger')}
                 />
               </Field>
-              <Field label="Хоккейная школа">
+              <Field label="Хоккейная школа" error={fieldErrors.hockeySchool}>
                 <input
                   type="text"
                   value={form.hockeySchool ?? ''}
+                  maxLength={100}
                   onChange={(e) => set('hockeySchool', e.target.value)}
-                  className={inputCls}
+                  className={cn(inputCls, fieldErrors.hockeySchool && 'border-danger focus:border-danger')}
                 />
               </Field>
             </div>
@@ -304,11 +328,12 @@ export function ProfileEditModal({ player, onSave, onClose }: Props) {
   )
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-xs text-text-2">{label}</span>
       {children}
+      {error && <span className="text-danger text-[11.5px]">{error}</span>}
     </label>
   )
 }
