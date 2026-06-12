@@ -1,10 +1,11 @@
 from uuid import UUID
 
-from fastapi import HTTPException, Query, status
+from fastapi import HTTPException, Query, Request, status
 from sqlalchemy import select, delete
 
 from app.api.deps import CurrentUser, DB, PLAN_ROADMAP_ACCESS
 from app.core.camel_router import CamelRouter
+from app.core.i18n import tr
 from app.models.player import Player
 from app.models.roadmap import RoadmapItem
 from app.schemas.roadmap import RoadmapItemOut, RoadmapItemUpdate
@@ -12,11 +13,11 @@ from app.schemas.roadmap import RoadmapItemOut, RoadmapItemUpdate
 router = CamelRouter()
 
 
-def _check_roadmap_access(current_user) -> None:
+def _check_roadmap_access(request: Request, current_user) -> None:
     if not PLAN_ROADMAP_ACCESS.get(current_user.plan, False):
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
-            "Roadmap доступен только на тарифе Старт и выше.",
+            tr("roadmap_plan_required", request),
         )
 
 
@@ -33,12 +34,13 @@ async def _get_player_or_404(current_user, db) -> Player:
 
 @router.get("/", response_model=list[RoadmapItemOut])
 async def get_roadmap(
+    request: Request,
     current_user: CurrentUser,
     db: DB,
     limit: int = Query(default=100, le=100),
     phase: int | None = None,
 ):
-    _check_roadmap_access(current_user)
+    _check_roadmap_access(request, current_user)
     result = await db.execute(
         select(Player).where(Player.user_id == current_user.id)
     )
@@ -56,12 +58,12 @@ async def get_roadmap(
 
 
 @router.post("/regenerate", status_code=202)
-async def regenerate_roadmap(current_user: CurrentUser, db: DB):
+async def regenerate_roadmap(request: Request, current_user: CurrentUser, db: DB):
     """
     Удаляет текущий роадмап и запускает фоновую генерацию заново через Celery.
     Безопасно: только для своего профиля игрока.
     """
-    _check_roadmap_access(current_user)
+    _check_roadmap_access(request, current_user)
     player = await _get_player_or_404(current_user, db)
 
     # Удалить существующий роадмап этого игрока

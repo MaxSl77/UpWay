@@ -1,17 +1,20 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '@/store/authStore'
+import { useSettingsStore } from '@/store/settingsStore'
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? '/api/v1',
   headers: { 'Content-Type': 'application/json' },
 })
 
-// ── Request interceptor: attach Bearer token ──────────────────────────────
+// ── Request interceptor: Bearer token + язык интерфейса ───────────────────
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
   const token = useAuthStore.getState().accessToken
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
   }
+  // Бэкенд локализует сообщения об ошибках по Accept-Language
+  config.headers['Accept-Language'] = useSettingsStore.getState().language
   return config
 })
 

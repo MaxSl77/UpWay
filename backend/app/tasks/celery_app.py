@@ -5,7 +5,7 @@ celery_app = Celery(
     "upway",
     broker=settings.CELERY_BROKER_URL,
     backend=settings.CELERY_RESULT_BACKEND,
-    include=["app.tasks.ai_tasks"],
+    include=["app.tasks.ai_tasks", "app.tasks.email_tasks"],
 )
 
 celery_app.conf.update(

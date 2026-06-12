@@ -203,9 +203,3 @@ def _default_roadmap(player) -> list:
 def refresh_opportunities():
     """Scrape / sync opportunities from external sources into the DB."""
     pass
-
-
-@celery_app.task
-def send_email(to: str, subject: str, html: str):
-    """Generic email sender via SMTP / SendGrid."""
-    pass

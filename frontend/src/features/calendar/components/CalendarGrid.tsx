@@ -16,8 +16,11 @@ const TYPE_CONFIG: Record<EventType, { dot: string; badge: string; labelRu: stri
 }
 
 const STATUS_LABELS: Record<EventStatus, { ru: string; en: string }> = {
-  upcoming:  { ru: 'Предстоящее', en: 'Upcoming' },
-  completed: { ru: 'Завершённое', en: 'Completed' },
+  upcoming:      { ru: 'Предстоящее',      en: 'Upcoming' },
+  completed:     { ru: 'Завершённое',      en: 'Completed' },
+  registered:    { ru: 'Зарегистрировано', en: 'Registered' },
+  submitted:     { ru: 'Заявка подана',    en: 'Submitted' },
+  action_needed: { ru: 'Требует действия', en: 'Action needed' },
 }
 
 // ── Calendar math ────────────────────────────────────────────────────────────

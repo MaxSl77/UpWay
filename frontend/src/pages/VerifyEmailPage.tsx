@@ -33,7 +33,9 @@ export default function VerifyEmailPage() {
         try {
           const me = await authApi.me()
           setUser(me)
-        } catch {}
+        } catch {
+          // не критично: пользователь обновится при следующем запросе
+        }
         setState('success')
         // Check if player profile already exists to decide where to send the user
         let destination = '/login'

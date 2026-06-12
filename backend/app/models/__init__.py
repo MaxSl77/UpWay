@@ -5,6 +5,7 @@ from app.models.chat import ChatSession, ChatMessage
 from app.models.roadmap import RoadmapItem
 from app.models.calendar import CalendarEvent
 from app.models.opportunity import Opportunity
+from app.models.skill_history import SkillSnapshot
 
 __all__ = [
     "User", "Player",
@@ -12,4 +13,5 @@ __all__ = [
     "RoadmapItem",
     "CalendarEvent",
     "Opportunity",
+    "SkillSnapshot",
 ]

@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "groupMain": "Главное",
+    "groupAccount": "Аккаунт",
+    "dashboard": "Дашборд",
+    "chat": "AI Консультант",
+    "roadmap": "Роадмап",
+    "calendar": "Календарь",
+    "opportunities": "Возможности",
+    "profile": "Профиль игрока",
+    "subscription": "Подписка",
+    "settings": "Настройки",
+    "signOut": "Выйти"
+  },
+  "plan": {
+    "free": "Бесплатный",
+    "starter": "Старт"
+  },
+  "common": {
+    "save": "Сохранить",
+    "cancel": "Отмена",
+    "close": "Закрыть",
+    "delete": "Удалить",
+    "edit": "Редактировать",
+    "loading": "Загрузка…",
+    "error": "Ошибка",
+    "retry": "Повторить"
+  }
+}

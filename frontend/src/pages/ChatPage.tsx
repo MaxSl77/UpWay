@@ -5,7 +5,7 @@ import { chatApi } from '@/features/chat/api'
 import { useChatStore } from '@/store/chatStore'
 
 export default function ChatPage() {
-  const { setSessions, setActiveSession, setMessages, activeSessionId } = useChatStore()
+  const { setSessions, setActiveSession, setMessages } = useChatStore()
 
   useEffect(() => {
     chatApi.getSessions()
@@ -27,6 +27,8 @@ export default function ChatPage() {
         }
       })
       .catch(() => {})
+    // zustand-сеттеры стабильны — эффект должен выполниться один раз при маунте
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (

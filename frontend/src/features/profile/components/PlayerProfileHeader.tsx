@@ -26,7 +26,7 @@ interface Props {
 
 export function PlayerProfileHeader({ player, onEdit, onReport }: Props) {
   const plan = useAuthStore((s) => s.user?.plan ?? 'free')
-  const canReport = plan === 'starter' || plan === 'pro'
+  const canReport = plan === 'starter'
   // Generate initials from player name
   const initials = player.name
     .split(' ')
@@ -105,7 +105,7 @@ export function PlayerProfileHeader({ player, onEdit, onReport }: Props) {
         ) : (
           <button
             disabled
-            title="Доступно на тарифах Starter и Pro"
+            title="Доступно на тарифе Старт"
             className="h-btn-sm px-4 rounded-btn text-sm font-medium border border-border bg-surface2 text-text-3 flex items-center gap-1.5 cursor-not-allowed"
           >
             <Lock size={12} />

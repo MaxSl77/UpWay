@@ -17,10 +17,7 @@ export const chatApi = {
     return data
   },
 
-  /**
-   * Send a message and receive the full response.
-   * For streaming, use sendMessageStream instead.
-   */
+  /** Send a message and receive the full AI response (non-streaming MVP). */
   sendMessage: async (sessionId: string, content: string): Promise<ChatMessage> => {
     const { data } = await api.post<ChatMessage>(
       `/chat/sessions/${sessionId}/messages`,
@@ -36,15 +33,5 @@ export const chatApi = {
 
   deleteSession: async (sessionId: string): Promise<void> => {
     await api.delete(`/chat/sessions/${sessionId}`)
-  },
-
-  /**
-   * SSE streaming endpoint — returns a ReadableStream.
-   * Caller is responsible for consuming the stream.
-   */
-  sendMessageStream: (sessionId: string, content: string): EventSource => {
-    const token = localStorage.getItem('accessToken') ?? ''
-    const url = `/api/v1/chat/sessions/${sessionId}/stream?content=${encodeURIComponent(content)}`
-    return new EventSource(url + `&token=${token}`)
   },
 }

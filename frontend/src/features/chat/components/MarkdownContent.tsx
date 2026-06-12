@@ -79,11 +79,7 @@ function parseBlocks(raw: string): Block[] {
 
     // ── Table ───────────────────────────────────────────────────────
     if (line.includes('|') && i + 1 < lines.length && /^\|?\s*[-:]+/.test(lines[i + 1])) {
-      const parseRow = (r: string) =>
-        r.split('|').map(c => c.trim()).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1 || (arr[0] !== '' && idx === 0) || (arr[arr.length-1] !== '' && idx === arr.length-1))
-          .filter(c => c !== '')
-
-      // Better pipe-split that handles leading/trailing pipes
+      // Pipe-split that handles leading/trailing pipes
       const splitRow = (r: string): string[] => {
         const trimmed = r.trim().replace(/^\|/, '').replace(/\|$/, '')
         return trimmed.split('|').map(c => c.trim())

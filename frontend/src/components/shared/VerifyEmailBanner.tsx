@@ -16,8 +16,11 @@ export function VerifyEmailBanner() {
     try {
       await authApi.resendVerification()
       setSent(true)
-    } catch {}
-    finally { setLoading(false) }
+    } catch {
+      // тихий сбой: баннер остаётся, можно повторить
+    } finally {
+      setLoading(false)
+    }
   }
 
   const t = {

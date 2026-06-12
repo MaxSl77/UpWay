@@ -1,0 +1,29 @@
+{
+  "nav": {
+    "groupMain": "Main",
+    "groupAccount": "Account",
+    "dashboard": "Dashboard",
+    "chat": "AI Consultant",
+    "roadmap": "Roadmap",
+    "calendar": "Calendar",
+    "opportunities": "Opportunities",
+    "profile": "Player Profile",
+    "subscription": "Subscription",
+    "settings": "Settings",
+    "signOut": "Sign out"
+  },
+  "plan": {
+    "free": "Free",
+    "starter": "Starter"
+  },
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "edit": "Edit",
+    "loading": "Loading…",
+    "error": "Error",
+    "retry": "Retry"
+  }
+}

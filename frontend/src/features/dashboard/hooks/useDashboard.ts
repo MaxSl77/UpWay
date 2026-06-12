@@ -26,6 +26,8 @@ export function useDashboard() {
     ])
       .catch(console.error)
       .finally(() => setLoading(false))
+    // zustand-сеттеры стабильны — эффект должен выполниться один раз при маунте
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return { player, metrics, nextStep, roadmapItems, events, isLoading }

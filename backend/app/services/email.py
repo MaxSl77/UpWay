@@ -1,47 +1,59 @@
 """
-Email delivery via Resend API.
-All outgoing mail goes through this module.
+Email templates + queueing.
+
+Отправка выполняется ТОЛЬКО в Celery-воркере (app/tasks/email_tasks.py):
+resend.Emails.send — синхронный HTTP-вызов, в event loop API он блокировал
+бы воркер uvicorn. API-слой вызывает queue_*() — это быстрый .delay() в Redis.
 """
-import resend
+import logging
+
 from app.core.config import settings
 
-
-def _client() -> None:
-    resend.api_key = settings.RESEND_API_KEY
+logger = logging.getLogger(__name__)
 
 
-def _from() -> str:
+def sender() -> str:
     return f"{settings.MAIL_FROM_NAME} <{settings.MAIL_FROM}>"
 
 
-async def send_password_reset(email: str, full_name: str, reset_url: str) -> None:
-    _client()
-    resend.Emails.send({
-        "from": _from(),
-        "to": email,
-        "subject": "Сброс пароля — UpWay",
-        "html": _reset_html(full_name, reset_url),
-    })
+# ── Построение писем (subject, html) ─────────────────────────────────────────
+
+def build_password_reset(full_name: str, reset_url: str) -> tuple[str, str]:
+    return "Сброс пароля — UpWay", _reset_html(full_name, reset_url)
 
 
-async def send_verification(email: str, full_name: str, verify_url: str) -> None:
-    _client()
-    resend.Emails.send({
-        "from": _from(),
-        "to": email,
-        "subject": "Подтвердите email — UpWay",
-        "html": _verify_html(full_name, verify_url),
-    })
+def build_verification(full_name: str, verify_url: str) -> tuple[str, str]:
+    return "Подтвердите email — UpWay", _verify_html(full_name, verify_url)
 
 
-async def send_welcome(email: str, full_name: str) -> None:
-    _client()
-    resend.Emails.send({
-        "from": _from(),
-        "to": email,
-        "subject": "Добро пожаловать в UpWay! 🏒",
-        "html": _welcome_html(full_name),
-    })
+def build_welcome(full_name: str) -> tuple[str, str]:
+    return "Добро пожаловать в UpWay! 🏒", _welcome_html(full_name)
+
+
+# ── Постановка в очередь (вызывается из API-эндпоинтов) ──────────────────────
+
+def _queue(to: str, subject: str, html: str) -> None:
+    """Enqueue в Celery. Сбой брокера не должен ронять запрос (логируем)."""
+    try:
+        from app.tasks.email_tasks import send_email_task
+        send_email_task.delay(to, subject, html)
+    except Exception:
+        logger.exception("Failed to enqueue email to %s (%s)", to, subject)
+
+
+def queue_password_reset(to: str, full_name: str, reset_url: str) -> None:
+    subject, html = build_password_reset(full_name, reset_url)
+    _queue(to, subject, html)
+
+
+def queue_verification(to: str, full_name: str, verify_url: str) -> None:
+    subject, html = build_verification(full_name, verify_url)
+    _queue(to, subject, html)
+
+
+def queue_welcome(to: str, full_name: str) -> None:
+    subject, html = build_welcome(full_name)
+    _queue(to, subject, html)
 
 
 # ── HTML-шаблоны ──────────────────────────────────────────────────────────────

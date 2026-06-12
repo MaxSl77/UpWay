@@ -50,6 +50,7 @@ class Player(Base):
     )
 
     # Relationships
-    user          = relationship("User",          back_populates="player")
-    roadmap_items = relationship("RoadmapItem",   back_populates="player", cascade="all, delete-orphan")
-    events        = relationship("CalendarEvent", back_populates="player", cascade="all, delete-orphan")
+    user            = relationship("User",          back_populates="player")
+    roadmap_items   = relationship("RoadmapItem",   back_populates="player", cascade="all, delete-orphan")
+    events          = relationship("CalendarEvent", back_populates="player", cascade="all, delete-orphan")
+    skill_snapshots = relationship("SkillSnapshot", back_populates="player", cascade="all, delete-orphan")

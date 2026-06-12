@@ -50,9 +50,10 @@ def _make_token_response(user: User) -> TokenResponse:
     )
 
 
-# ── Register ──────────────────────────────────────────────────────────────────
+# ── Register (rate-limited: создаёт аккаунт и шлёт письмо) ───────────────────
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
+@limiter.limit("10/minute;30/hour")
 async def register(request: Request, payload: RegisterRequest, db: DB):
     existing = await db.execute(select(User).where(User.email == payload.email))
     if existing.scalar_one_or_none():
@@ -72,13 +73,10 @@ async def register(request: Request, payload: RegisterRequest, db: DB):
     redis = await get_redis()
     await redis.setex(_verify_key(verify_token), VERIFY_TOKEN_TTL_SEC, str(user.id))
 
-    # Send verification email (non-blocking — fire and forget)
+    # Письмо уходит через Celery — API не ждёт HTTP-вызов к Resend
     verify_url = f"{settings.FRONTEND_URL}/verify-email?token={verify_token}"
-    try:
-        from app.services.email import send_verification
-        await send_verification(user.email, user.full_name, verify_url)
-    except Exception:
-        pass  # Email failure must never block registration
+    from app.services.email import queue_verification
+    queue_verification(user.email, user.full_name, verify_url)
 
     return _make_token_response(user)
 
@@ -161,7 +159,8 @@ async def verify_email(payload: EmailVerifyRequest, db: DB):
 
 
 @router.post("/resend-verification", status_code=202)
-async def resend_verification(current_user: CurrentUser):
+@limiter.limit("3/minute;10/hour")
+async def resend_verification(request: Request, current_user: CurrentUser):
     """Re-send verification email for the currently authenticated user."""
     if current_user.is_email_verified:
         return {"detail": "Email already verified"}
@@ -171,11 +170,8 @@ async def resend_verification(current_user: CurrentUser):
     await redis.setex(_verify_key(verify_token), VERIFY_TOKEN_TTL_SEC, str(current_user.id))
 
     verify_url = f"{settings.FRONTEND_URL}/verify-email?token={verify_token}"
-    try:
-        from app.services.email import send_verification
-        await send_verification(current_user.email, current_user.full_name, verify_url)
-    except Exception:
-        pass
+    from app.services.email import queue_verification
+    queue_verification(current_user.email, current_user.full_name, verify_url)
 
     return {"detail": "Verification email sent"}
 
@@ -190,7 +186,8 @@ async def get_me(current_user: CurrentUser):
 # ── Password reset ────────────────────────────────────────────────────────────
 
 @router.post("/password-reset/request", status_code=202)
-async def request_password_reset(payload: PasswordResetRequest, db: DB):
+@limiter.limit("5/minute;20/hour")
+async def request_password_reset(request: Request, payload: PasswordResetRequest, db: DB):
     result = await db.execute(select(User).where(User.email == payload.email))
     user = result.scalar_one_or_none()
 
@@ -202,11 +199,8 @@ async def request_password_reset(payload: PasswordResetRequest, db: DB):
         await redis.setex(_reset_key(token), RESET_TOKEN_TTL_SEC, str(user.id))
 
         reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token}"
-        try:
-            from app.services.email import send_password_reset
-            await send_password_reset(user.email, user.full_name, reset_url)
-        except Exception:
-            pass  # Email failure must not reveal whether user exists
+        from app.services.email import queue_password_reset
+        queue_password_reset(user.email, user.full_name, reset_url)
 
     return {"detail": "If the email exists, a reset link has been sent."}
 
@@ -261,15 +255,16 @@ class PlanUpdateRequest(BaseModel):
 # (no payment provider connected yet).
 # BEFORE PRODUCTION: Remove this endpoint and drive plan changes exclusively
 # from a verified payment webhook (Stripe / YooKassa / etc.).
-# Any authenticated user can currently self-upgrade to "pro" for free.
+# Any authenticated user can currently self-upgrade to "starter" for free.
 @router.patch("/me/plan", response_model=UserOut)
 async def update_plan(payload: PlanUpdateRequest, current_user: CurrentUser, db: DB):
+    from app.api.deps import KNOWN_PLANS
     if settings.ENVIRONMENT == "production":
         raise HTTPException(
             status.HTTP_403_FORBIDDEN,
             "Plan changes must go through the payment provider.",
         )
-    if payload.plan not in {"free", "starter"}:
+    if payload.plan not in KNOWN_PLANS:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid plan")
     current_user.plan = payload.plan
     db.add(current_user)

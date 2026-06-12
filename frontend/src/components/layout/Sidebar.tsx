@@ -1,41 +1,37 @@
 import { NavLink, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   LayoutDashboard, MessageSquare, Map, Calendar,
   Trophy, User, CreditCard, Settings, LogOut,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/authStore'
-import { useSettingsStore } from '@/store/settingsStore'
 
 export function Sidebar() {
   const { user, logout } = useAuthStore()
-  const { language } = useSettingsStore()
+  const { t } = useTranslation()
   const navigate = useNavigate()
 
   const NAV_ITEMS = [
     {
-      group: language === 'ru' ? 'Главное' : 'Main',
+      group: t('nav.groupMain'),
       items: [
-        { to: '/dashboard',     label: language === 'ru' ? 'Дашборд'         : 'Dashboard',      icon: LayoutDashboard },
-        { to: '/chat',          label: language === 'ru' ? 'AI Консультант'   : 'AI Consultant',  icon: MessageSquare },
-        { to: '/roadmap',       label: language === 'ru' ? 'Роадмап'          : 'Roadmap',         icon: Map },
-        { to: '/calendar',      label: language === 'ru' ? 'Календарь'        : 'Calendar',        icon: Calendar },
-        { to: '/opportunities', label: language === 'ru' ? 'Возможности'      : 'Opportunities',  icon: Trophy },
+        { to: '/dashboard',     label: t('nav.dashboard'),     icon: LayoutDashboard },
+        { to: '/chat',          label: t('nav.chat'),          icon: MessageSquare },
+        { to: '/roadmap',       label: t('nav.roadmap'),       icon: Map },
+        { to: '/calendar',      label: t('nav.calendar'),      icon: Calendar },
+        { to: '/opportunities', label: t('nav.opportunities'), icon: Trophy },
       ],
     },
     {
-      group: language === 'ru' ? 'Аккаунт' : 'Account',
+      group: t('nav.groupAccount'),
       items: [
-        { to: '/profile',      label: language === 'ru' ? 'Профиль игрока'  : 'Player Profile', icon: User },
-        { to: '/subscription', label: language === 'ru' ? 'Подписка'        : 'Subscription',   icon: CreditCard },
-        { to: '/settings',     label: language === 'ru' ? 'Настройки'       : 'Settings',        icon: Settings },
+        { to: '/profile',      label: t('nav.profile'),      icon: User },
+        { to: '/subscription', label: t('nav.subscription'), icon: CreditCard },
+        { to: '/settings',     label: t('nav.settings'),     icon: Settings },
       ],
     },
   ]
-
-  const PLAN_LABELS: Record<string, string> = language === 'ru'
-    ? { free: 'Бесплатный', starter: 'Старт', pro: 'Про' }
-    : { free: 'Free', starter: 'Starter', pro: 'Pro' }
 
   const handleLogout = () => {
     logout()
@@ -87,13 +83,13 @@ export function Sidebar() {
         <div className="flex-1 min-w-0">
           <p className="text-[13px] font-medium truncate">{user?.fullName ?? 'User'}</p>
           <p className="text-[11px] text-accent font-medium">
-            {PLAN_LABELS[user?.plan ?? 'free']}
+            {t(`plan.${user?.plan ?? 'free'}`)}
           </p>
         </div>
         <button
           onClick={handleLogout}
           className="text-text-3 hover:text-danger transition-colors"
-          title={language === 'ru' ? 'Выйти' : 'Sign out'}
+          title={t('nav.signOut')}
         >
           <LogOut size={15} />
         </button>

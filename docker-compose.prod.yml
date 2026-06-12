@@ -18,18 +18,23 @@ services:
       - redis_data:/data
 
   backend:
-    image: upway-backend:latest
+    # Образы публикует GitHub Actions (deploy.yml) в GHCR;
+    # переопределяются через BACKEND_IMAGE / FRONTEND_IMAGE в .env
+    image: ${BACKEND_IMAGE:-ghcr.io/maxsl77/upway-backend:latest}
     restart: always
     env_file: .env
     depends_on:
       - db
       - redis
+    # --proxy-headers: доверять X-Forwarded-For от nginx, иначе per-IP
+    # rate-limit видит всех клиентов как один IP (адрес nginx)
     command: >
       sh -c "alembic upgrade head &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4"
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
+                     --proxy-headers --forwarded-allow-ips='*'"
 
   worker:
-    image: upway-backend:latest
+    image: ${BACKEND_IMAGE:-ghcr.io/maxsl77/upway-backend:latest}
     restart: always
     env_file: .env
     depends_on:
@@ -38,7 +43,7 @@ services:
     command: celery -A app.tasks.celery_app worker --loglevel=warning --concurrency=4
 
   beat:
-    image: upway-backend:latest
+    image: ${BACKEND_IMAGE:-ghcr.io/maxsl77/upway-backend:latest}
     restart: always
     env_file: .env
     depends_on:
@@ -46,7 +51,7 @@ services:
     command: celery -A app.tasks.celery_app beat --loglevel=warning
 
   frontend:
-    image: upway-frontend:latest
+    image: ${FRONTEND_IMAGE:-ghcr.io/maxsl77/upway-frontend:latest}
     restart: always
 
   nginx:

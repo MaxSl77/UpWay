@@ -94,7 +94,8 @@ export interface RoadmapItem {
 // ── Calendar / Events ────────────────────────────────────────────────────────
 
 export type EventType = 'tournament' | 'camp' | 'tryout' | 'deadline' | 'other'
-export type EventStatus = 'upcoming' | 'completed'
+// Должен совпадать с backend/app/models/calendar.py (поле status)
+export type EventStatus = 'upcoming' | 'completed' | 'registered' | 'submitted' | 'action_needed'
 
 export interface CalendarEvent {
   id: string
@@ -116,6 +117,7 @@ export interface Opportunity {
   title: string
   description: string
   location: string
+  country: string
   deadline?: string
   isUrgent: boolean
   tags: string[]
@@ -139,6 +141,15 @@ export interface BillingInfo {
   nextBillingDate?: string
   paymentMethod?: string
   lastInvoiceAmount?: number
+}
+
+// ── Skill history ────────────────────────────────────────────────────────────
+
+/** Снимок навыков (GET /players/me/skills/history) — данные для графиков прогресса */
+export interface SkillSnapshot {
+  id: string
+  skills: PlayerSkills
+  createdAt: string
 }
 
 // ── Dashboard metrics ────────────────────────────────────────────────────────

@@ -80,3 +80,9 @@ class NextStep(Schema):
     title:       str
     description: str
     cta_label:   str = "Take Action →"  # camelCase: ctaLabel
+
+
+class SkillSnapshotOut(Schema):
+    id:         UUID
+    skills:     dict
+    created_at: datetime   # camelCase: createdAt

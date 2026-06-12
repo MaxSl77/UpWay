@@ -1,10 +1,9 @@
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { CheckCircle } from 'lucide-react'
 
 export default function PaymentPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const plan = params.get('plan') ?? 'Pro'
+  const plan = params.get('plan') ?? 'Starter'
 
   return (
     <div className="flex-1 flex items-center justify-center bg-bg">

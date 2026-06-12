@@ -3,11 +3,12 @@
   "configurations": [
     {
       "name": "upway",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "cwd": "frontend",
-      "port": 3000,
-      "autoPort": false
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": [
+        "/c",
+        "cd frontend && set VITE_PROXY_TARGET=http://localhost:8000&& npm run dev -- --port 3100 --strictPort"
+      ],
+      "port": 3100
     }
   ]
 }

@@ -1,5 +1,4 @@
 from uuid import UUID
-from typing import AsyncIterator
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from openai import AsyncOpenAI
@@ -138,21 +137,3 @@ class ChatService:
         content = response.choices[0].message.content
         context_card = rag_context[:200] if rag_context else None
         return content, context_card
-
-    async def stream_response(
-        self, session_id: UUID, user_message: str
-    ) -> AsyncIterator[str]:
-        messages, _ = await self._build_messages(session_id, user_message)
-
-        client = _openrouter_client()
-        stream = await client.chat.completions.create(
-            model=settings.OPENROUTER_MODEL,
-            messages=messages,
-            max_tokens=1024,
-            temperature=0.7,
-            stream=True,
-        )
-        async for chunk in stream:
-            delta = chunk.choices[0].delta.content
-            if delta:
-                yield delta

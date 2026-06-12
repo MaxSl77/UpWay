@@ -7,12 +7,10 @@ import type { PlanId } from '@/types'
 const PLAN_NAMES_RU: Record<PlanId, string> = {
   free: 'Бесплатный',
   starter: 'Старт',
-  pro: 'Про',
 }
 const PLAN_NAMES_EN: Record<PlanId, string> = {
   free: 'Free',
   starter: 'Starter',
-  pro: 'Pro',
 }
 
 export function BillingInfo() {

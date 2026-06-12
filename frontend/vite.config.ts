@@ -39,7 +39,9 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: 'http://backend:8000',
+        // В docker-compose бэкенд доступен по имени сервиса; при запуске
+        // на хосте переопределяется: VITE_PROXY_TARGET=http://localhost:8000
+        target: process.env.VITE_PROXY_TARGET ?? 'http://backend:8000',
         changeOrigin: true,
         autoRewrite: true,
       },

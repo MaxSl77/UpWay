@@ -1,14 +1,22 @@
-from datetime import date
-from fastapi import HTTPException, status
+from datetime import date, datetime, timedelta, timezone
+
+from fastapi import HTTPException, Query, status
 from app.core.camel_router import CamelRouter
 from sqlalchemy import select, func
 
 from app.api.deps import CurrentUser, DB
 from app.models.player import Player
-from app.schemas.player import PlayerCreate, PlayerUpdate, PlayerOut, DashboardMetrics, NextStep
+from app.models.skill_history import SkillSnapshot
+from app.schemas.player import (
+    PlayerCreate, PlayerUpdate, PlayerOut,
+    DashboardMetrics, NextStep, SkillSnapshotOut,
+)
 from app.tasks.ai_tasks import generate_roadmap_task
 
 router = CamelRouter()
+
+# Окно сравнения для дельт навыков на дашборде
+SKILL_DELTA_WINDOW_DAYS = 30
 
 
 @router.post("/", response_model=PlayerOut, status_code=201)
@@ -20,6 +28,9 @@ async def create_player(payload: PlayerCreate, current_user: CurrentUser, db: DB
     player = Player(**payload.model_dump(), user_id=current_user.id)
     db.add(player)
     await db.flush()
+
+    # Стартовый снимок навыков — точка отсчёта для истории прогресса
+    db.add(SkillSnapshot(player_id=player.id, skills=player.skills))
 
     # Kick off async roadmap generation
     generate_roadmap_task.delay(str(player.id))
@@ -43,10 +54,37 @@ async def update_my_player(payload: PlayerUpdate, current_user: CurrentUser, db:
     if not player:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Player profile not found")
 
-    for field, value in payload.model_dump(exclude_unset=True).items():
+    data = payload.model_dump(exclude_unset=True)
+    skills_changed = "skills" in data and data["skills"] != player.skills
+
+    for field, value in data.items():
         setattr(player, field, value)
 
+    if skills_changed:
+        db.add(SkillSnapshot(player_id=player.id, skills=data["skills"]))
+
     return player
+
+
+@router.get("/me/skills/history", response_model=list[SkillSnapshotOut])
+async def get_skills_history(
+    current_user: CurrentUser,
+    db: DB,
+    limit: int = Query(default=100, le=365),
+):
+    """История снимков навыков (для графиков прогресса), от старых к новым."""
+    result = await db.execute(select(Player).where(Player.user_id == current_user.id))
+    player = result.scalar_one_or_none()
+    if not player:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Player profile not found")
+
+    snapshots = await db.execute(
+        select(SkillSnapshot)
+        .where(SkillSnapshot.player_id == player.id)
+        .order_by(SkillSnapshot.created_at.asc())
+        .limit(limit)
+    )
+    return snapshots.scalars().all()
 
 
 @router.get("/me/metrics", response_model=DashboardMetrics)
@@ -59,6 +97,32 @@ async def get_metrics(current_user: CurrentUser, db: DB):
     skills: dict = player.skills or {}
     avg_skill = sum(skills.values()) / len(skills) if skills else 5.0
     skating   = float(skills.get("skating", 5))
+
+    # Дельта катания: сравниваем с базовым снимком из истории навыков —
+    # ближайший снапшот старше окна (30 дней), иначе самый ранний.
+    window_start = datetime.now(timezone.utc) - timedelta(days=SKILL_DELTA_WINDOW_DAYS)
+    baseline_res = await db.execute(
+        select(SkillSnapshot)
+        .where(
+            SkillSnapshot.player_id == player.id,
+            SkillSnapshot.created_at <= window_start,
+        )
+        .order_by(SkillSnapshot.created_at.desc())
+        .limit(1)
+    )
+    baseline = baseline_res.scalar_one_or_none()
+    if baseline is None:
+        earliest_res = await db.execute(
+            select(SkillSnapshot)
+            .where(SkillSnapshot.player_id == player.id)
+            .order_by(SkillSnapshot.created_at.asc())
+            .limit(1)
+        )
+        baseline = earliest_res.scalar_one_or_none()
+
+    skating_delta = 0.0
+    if baseline and baseline.skills:
+        skating_delta = round(skating - float(baseline.skills.get("skating", skating)), 1)
 
     # Цель — первый элемент из goals, или дефолт
     goal_label = player.goals[0] if player.goals else "МХЛ"
@@ -87,7 +151,7 @@ async def get_metrics(current_user: CurrentUser, db: DB):
         goal_label=goal_label,
         months_remaining=months_left,
         skating_score=round(skating, 1),
-        skating_delta=0.0,  # TECH DEBT: delta за период пока не вычисляется (нет истории навыков)
+        skating_delta=skating_delta,
         goal_probability_pct=probability,
         probability_updated_at=str(date.today()),
     )

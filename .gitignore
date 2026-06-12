@@ -16,7 +16,6 @@ dist/
 node_modules/
 frontend/dist/
 frontend/.vite/
-frontend/package-lock.json
 
 # IDE
 .vscode/
@@ -29,10 +28,6 @@ Thumbs.db
 
 # Docker
 *.override.yml
-
-# Alembic
-alembic/versions/*.py
-!alembic/versions/.gitkeep
 
 # Certs
 nginx/certs/

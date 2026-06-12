@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import HTTPException, Query, status
 from app.core.camel_router import CamelRouter
 from sqlalchemy import select, extract
@@ -14,9 +16,14 @@ router = CamelRouter()
 async def get_events(
     current_user: CurrentUser,
     db: DB,
-    year: int = Query(default=2026),
-    month: int = Query(default=6, ge=1, le=12),
+    year: int | None = Query(default=None, ge=2000, le=2100),
+    month: int | None = Query(default=None, ge=1, le=12),
 ):
+    # Без явных параметров отдаём текущий месяц (никаких хардкод-дат)
+    today = date.today()
+    year = year if year is not None else today.year
+    month = month if month is not None else today.month
+
     player = await db.execute(select(Player).where(Player.user_id == current_user.id))
     player = player.scalar_one_or_none()
     if not player:
@@ -40,7 +47,6 @@ async def get_upcoming(
     db: DB,
     limit: int = Query(default=10, le=50),
 ):
-    from datetime import date
     player = await db.execute(select(Player).where(Player.user_id == current_user.id))
     player = player.scalar_one_or_none()
     if not player:

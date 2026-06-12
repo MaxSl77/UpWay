@@ -1,7 +1,6 @@
 from uuid import UUID
 from fastapi import HTTPException, status
 from app.core.camel_router import CamelRouter
-from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DB, CheckMessageLimit
@@ -120,6 +119,12 @@ async def send_message(
             user_message=payload.content,
         )
     except Exception as e:
+        # Возврат квоты: user-сообщение уже закоммичено (чтобы его видели
+        # конкурентные GET), но обмен не состоялся — удаляем его, чтобы
+        # неудачная попытка не списывала дневной лимит.
+        await db.delete(user_msg)
+        await db.commit()
+
         err_str = str(e)
         if "401" in err_str or "Authentication" in err_str or "User not found" in err_str:
             raise HTTPException(status.HTTP_502_BAD_GATEWAY, "AI service authentication error. Check OPENROUTER_API_KEY.")
@@ -140,33 +145,8 @@ async def send_message(
 
     return ai_msg
 
-
-@router.get("/sessions/{session_id}/stream")
-async def stream_message(
-    session_id: UUID,
-    content: str,
-    current_user: CurrentUser,
-    db: DB,
-):
-    """SSE endpoint for streaming AI responses token-by-token."""
-    # Ownership check — same guard used by the non-streaming send_message endpoint.
-    # Without this, any authenticated user who knows a session UUID can read
-    # another user's chat history (it's loaded into the GPT context) and
-    # consume their message quota.
-    session_check = await db.execute(
-        select(ChatSession).where(
-            ChatSession.id == session_id,
-            ChatSession.user_id == current_user.id,   # ← ownership gate
-        )
-    )
-    if not session_check.scalar_one_or_none():
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Session not found")
-
-    service = ChatService(db=db, user=current_user)
-
-    async def event_generator():
-        async for chunk in service.stream_response(session_id, content):
-            yield f"data: {chunk}\n\n"
-        yield "data: [DONE]\n\n"
-
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+# NOTE: SSE-стриминг удалён сознательно (MVP работает в нестриминговом режиме).
+# Прежний /sessions/{id}/stream был нерабочим с фронта (EventSource не умеет
+# Bearer-заголовки), обходил дневной лимит сообщений и не сохранял историю.
+# Потоковую генерацию добавим после MVP через fetch-streaming или WebSocket —
+# с CheckMessageLimit и персистенцией обоих сообщений.
